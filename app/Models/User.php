@@ -14,7 +14,7 @@ class User extends Authenticatable
         'name', 'email', 'password', 'role', 'employee_id', 'department',
         'position', 'base_salary', 'position_allowance', 'meal_allowance',
         'transport_allowance', 'phone', 'address', 'join_date', 'npwp',
-        'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo',
+        'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo', 'shift_id',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -55,5 +55,10 @@ class User extends Authenticatable
     public function payrolls()
     {
         return $this->hasMany(Payroll::class);
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

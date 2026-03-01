@@ -17,21 +17,23 @@ class AttendanceController extends Controller
         $year = $request->get('year', Carbon::now()->year);
 
         if ($user->isAdmin()) {
-            $attendances = Attendance::with('user')
+            $attendances = Attendance::with(['user', 'shift'])
                 ->whereMonth('date', $month)
                 ->whereYear('date', $year)
                 ->orderBy('date', 'desc')
                 ->orderBy('clock_in', 'desc')
                 ->paginate(20);
         } else {
-            $attendances = Attendance::where('user_id', $user->id)
+            $attendances = Attendance::with('shift')
+                ->where('user_id', $user->id)
                 ->whereMonth('date', $month)
                 ->whereYear('date', $year)
                 ->orderBy('date', 'desc')
                 ->paginate(20);
         }
 
-        $todayAttendance = Attendance::where('user_id', $user->id)
+        $todayAttendance = Attendance::with('shift')
+            ->where('user_id', $user->id)
             ->whereDate('date', Carbon::today())
             ->first();
 
@@ -39,6 +41,7 @@ class AttendanceController extends Controller
             'attendances' => $attendances,
             'todayAttendance' => $todayAttendance,
             'filters' => ['month' => (int) $month, 'year' => (int) $year],
+            'userShift' => $user->shift, // Pass user's default shift
         ]);
     }
 
@@ -63,12 +66,22 @@ class AttendanceController extends Controller
         // Save photo
         $photoPath = $this->saveBase64Photo($request->photo, $user->id, 'in');
 
-        // Determine status (late if after 08:00)
-        $status = $now->format('H:i') > '08:00' ? 'late' : 'present';
+        // Get user's shift
+        $shift = $user->shift;
+        
+        // Determine status based on shift
+        if ($shift) {
+            // Check if late based on shift's start time and tolerance
+            $status = $shift->isLate($now->format('H:i:s')) ? 'late' : 'present';
+        } else {
+            // Fallback to default 08:00 if no shift assigned
+            $status = $now->format('H:i') > '08:00' ? 'late' : 'present';
+        }
 
         Attendance::updateOrCreate(
             ['user_id' => $user->id, 'date' => $today],
             [
+                'shift_id' => $shift?->id,
                 'clock_in' => $now->format('H:i:s'),
                 'photo_in' => $photoPath,
                 'status' => $status,
