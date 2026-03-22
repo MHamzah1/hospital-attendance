@@ -111,9 +111,15 @@ class PayrollController extends Controller
             ->sum('total_hours');
 
         // === PENDAPATAN ===
-        $baseSalary = $employee->base_salary;
-        $positionAllowance = $employee->position_allowance;
-        $mealAllowance = $employee->meal_allowance * $presentDays; // Per hari hadir
+        // Read salary from existing payroll record, not from employee master
+        $existing = Payroll::where('user_id', $employee->id)
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
+        
+        $baseSalary = $existing?->base_salary ?? 0;
+        $positionAllowance = $existing?->position_allowance ?? $employee->position_allowance;
+        $mealAllowance = ($existing?->meal_allowance ?? $employee->meal_allowance) * $presentDays; // Per hari hadir
         $transportAllowance = $employee->transport_allowance * $presentDays; // Per hari hadir
 
         // Lembur: 1/173 x gaji pokok x 1.5 (jam pertama) + 2x (jam berikutnya)

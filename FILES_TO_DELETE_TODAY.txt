@@ -1,0 +1,14 @@
+Files created on 2026-03-22 that need to be DELETED to revert all changes:
+
+1. database/migrations/2026_03_22_000001_drop_salary_columns_from_users_table.php
+
+Optionally delete if not needed before this session started:
+2. app/Http/Controllers/PayrollImportController.php
+3. reset-today.bat
+
+To revert manually:
+1. Delete the migration file
+2. git checkout HEAD -- app/Http/Controllers/PayrollController.php
+3. git checkout HEAD -- app/Http/Controllers/PayrollImportController.php (if needed)
+4. git checkout HEAD -- resources/js/Pages/Payroll/Index.jsx (if needed)
+5. git clean -fd

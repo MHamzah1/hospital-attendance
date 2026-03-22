@@ -12,8 +12,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'employee_id', 'department',
-        'position', 'base_salary', 'position_allowance', 'meal_allowance',
-        'transport_allowance', 'phone', 'address', 'join_date', 'npwp',
+        'position', 'phone', 'address', 'join_date', 'npwp',
         'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo', 'shift_id',
     ];
 
@@ -24,10 +23,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'base_salary' => 'decimal:2',
-            'position_allowance' => 'decimal:2',
-            'meal_allowance' => 'decimal:2',
-            'transport_allowance' => 'decimal:2',
             'join_date' => 'date',
         ];
     }

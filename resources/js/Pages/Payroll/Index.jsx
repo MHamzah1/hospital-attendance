@@ -60,6 +60,14 @@ export default function PayrollIndex({ payrolls, employees, filters }) {
                 </div>
             </div>
 
+            {/* Info Message */}
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+                <p className="text-sm text-blue-700">
+                    <strong>ℹ️ Informasi:</strong> Gaji pokok dan tunjangan karyawan sekarang dikelola melalui modul Penggajian (import excel). 
+                    Pastikan input data gaji di file Excel impor dengan benar.
+                </p>
+            </div>
+
             {/* Summary cards */}
             {payrolls?.data?.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
