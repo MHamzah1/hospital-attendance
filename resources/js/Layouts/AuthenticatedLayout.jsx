@@ -88,11 +88,15 @@ export default function AuthenticatedLayout({ header, children }) {
                 <div className="flex h-full flex-col">
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-bold text-white shadow-lg shadow-emerald-500/30">
-                            RS
-                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                            <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            className="h-full w-full object-cover"
+                            />
+                            </div>
                         <div>
-                            <p className="text-base font-bold text-white leading-tight">RS Mandiri</p>
+                            <p className="text-base font-bold text-white leading-tight">RS Kartika Husada Setu</p>
                             <p className="text-[11px] text-emerald-400/80 font-medium">Sistem Absensi</p>
                         </div>
                         <button

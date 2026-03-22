@@ -19,11 +19,11 @@ export default function GuestLayout({ children }) {
                         </div>
                     </Link>
                     <h1 className="text-4xl font-extrabold text-white leading-tight">
-                        RS Mandiri
+                        RS Kartika Husada Setu
                     </h1>
                     <p className="text-emerald-400 font-medium text-lg mt-2">Sistem Absensi Karyawan</p>
                     <p className="text-slate-400 text-sm mt-6 max-w-sm mx-auto leading-relaxed">
-                        Portal absensi dan pengelolaan HR khusus untuk pegawai internal Rumah Sakit Mandiri.
+                        Portal absensi dan pengelolaan HR khusus untuk pegawai internal Rumah Sakit Kartika Husada Setu.
                     </p>
 
                     {/* Feature highlights */}
@@ -47,11 +47,15 @@ export default function GuestLayout({ children }) {
                 {/* Mobile logo */}
                 <div className="lg:hidden mb-8 text-center">
                     <Link href="/" className="inline-flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-bold text-white shadow-lg shadow-emerald-500/30">
-                            RS
-                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                            <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            className="h-full w-full object-cover"
+                            />
+                            </div>
                         <div className="text-left">
-                            <p className="text-lg font-bold text-slate-800">RS Mandiri</p>
+                            <p className="text-lg font-bold text-slate-800">RS Kartika Husada Setu</p>
                             <p className="text-xs text-emerald-600 font-medium">Sistem Absensi</p>
                         </div>
                     </Link>

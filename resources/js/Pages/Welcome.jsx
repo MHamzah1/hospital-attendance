@@ -11,11 +11,15 @@ export default function Welcome({ auth }) {
                 <div className="relative z-10 w-full max-w-5xl px-6 lg:px-8 flex flex-col min-h-screen">
                     <nav className="flex items-center justify-between pb-12 pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 font-bold text-white shadow-lg shadow-emerald-500/30">
-                                RS
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                            <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            className="h-full w-full object-cover"
+                            />
                             </div>
                             <span className="text-xl font-bold text-white tracking-wide">
-                                Mandiri <span className="font-light text-emerald-400">Attendance</span>
+                                RSKHS <span className="font-light text-emerald-400">Attendance</span>
                             </span>
                         </div>
 
@@ -55,7 +59,7 @@ export default function Welcome({ auth }) {
                         </h1>
 
                         <p className="mt-8 max-w-2xl text-center text-lg leading-relaxed text-slate-300">
-                            Portal absensi dan pengelolaan HR khusus untuk pegawai internal RS Mandiri. Lacak kehadiran, ajukan cuti, dan manajemen absensi dengan mudah.
+                            Portal absensi dan pengelolaan HR khusus untuk pegawai internal RS Kartika Husada Setu. Lacak kehadiran, ajukan cuti, dan manajemen absensi dengan mudah.
                         </p>
 
                         <div className="mt-10 flex flex-col gap-4 sm:flex-row items-center justify-center">
@@ -72,7 +76,7 @@ export default function Welcome({ auth }) {
                     </main>
 
                     <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
-                        &copy; {new Date().getFullYear()} Rumah Sakit Mandiri. Seluruh hak cipta dilindungi.
+                        &copy; {new Date().getFullYear()} Rumah Sakit Kartika Husada Setu. Seluruh hak cipta dilindungi.
                     </footer>
                 </div>
             </div>
