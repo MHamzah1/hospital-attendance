@@ -13,9 +13,13 @@ export default function GuestLayout({ children }) {
                 <div className="relative z-10 text-center">
                     <Link href="/" className="inline-block">
                         <div className="flex items-center justify-center gap-4 mb-8">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-2xl font-bold text-white shadow-2xl shadow-emerald-500/30">
-                                RS
-                            </div>
+                            <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-2xl overflow-hidden">
+                        <img 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            className="h-20 w-20 object-contain"
+                        />
+                    </div>
                         </div>
                     </Link>
                     <h1 className="text-4xl font-extrabold text-white leading-tight">

@@ -15,11 +15,11 @@ export default function Welcome({ auth }) {
                             <img 
                             src="/logo.png" 
                             alt="Logo" 
-                            className="h-full w-full object-cover"
+                            className="h-16 w-16 object-cover"
                             />
                             </div>
                             <span className="text-xl font-bold text-white tracking-wide">
-                                RSKHS <span className="font-light text-emerald-400">Attendance</span>
+                                RSKHS <span className="h-14 w-14 font-light text-orange-400">Attendance</span>
                             </span>
                         </div>
 
