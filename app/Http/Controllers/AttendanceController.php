@@ -219,7 +219,7 @@ class AttendanceController extends Controller
                     try {
                         $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $schedule->shift->start_time);
                         $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
-                        $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
+                        $diffSeconds = abs($clockIn->diffInSeconds($shiftStart, false));
                         
                         if ($diffSeconds > 0) {
                             $hours   = (int) floor($diffSeconds / 3600);
@@ -280,7 +280,8 @@ class AttendanceController extends Controller
             $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $shift->start_time);
             $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
 
-            $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
+            // diffInSeconds returns negative when clockIn is after shiftStart, so use absolute
+            $diffSeconds = abs($clockIn->diffInSeconds($shiftStart, false));
 
             // Jika clock in lebih awal atau sama dengan shift start, tidak terlambat
             if ($diffSeconds <= 0) {

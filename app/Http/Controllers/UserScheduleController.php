@@ -423,10 +423,8 @@ class UserScheduleController extends Controller
                     continue;
                 }
 
-                // Find employee by NIP (check both employee_id and nip fields)
-                $employee = User::where('employee_id', $nip)
-                    ->orWhere('nip', $nip)
-                    ->first();
+                // Find employee by NIP only
+                $employee = User::where('nip', $nip)->first();
                 if (!$employee) {
                     $errors[] = "Baris " . ($i + 1) . ": NIP '{$nip}' tidak ditemukan.";
                     continue;

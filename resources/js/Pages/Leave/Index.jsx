@@ -107,6 +107,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels }) {
                         </div>
                     )}
                 </div>
+            </div>
 
             <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
                 <div className="overflow-x-auto">
