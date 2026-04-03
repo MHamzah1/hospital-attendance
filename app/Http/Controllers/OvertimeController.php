@@ -13,6 +13,8 @@ class OvertimeController extends Controller
     {
         $user = $request->user();
         $status = $request->get('status', 'all');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
         $query = $user->isAdmin()
             ? OvertimeRequest::with('user', 'approver')
@@ -22,11 +24,23 @@ class OvertimeController extends Controller
             $query->where('status', $status);
         }
 
+        if ($dateFrom) {
+            $query->where('date', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('date', '<=', $dateTo);
+        }
+
         $overtimes = $query->latest()->paginate(15);
 
         return Inertia::render('Overtime/Index', [
             'overtimes' => $overtimes,
-            'filters' => ['status' => $status],
+            'filters' => [
+                'status' => $status,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ],
         ]);
     }
 

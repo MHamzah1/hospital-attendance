@@ -13,6 +13,8 @@ class LeaveController extends Controller
     {
         $user = $request->user();
         $status = $request->get('status', 'all');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
         $query = $user->isAdmin()
             ? LeaveRequest::with('user', 'approver')
@@ -22,11 +24,23 @@ class LeaveController extends Controller
             $query->where('status', $status);
         }
 
+        if ($dateFrom) {
+            $query->where('start_date', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('end_date', '<=', $dateTo);
+        }
+
         $leaves = $query->latest()->paginate(15);
 
         return Inertia::render('Leave/Index', [
             'leaves' => $leaves,
-            'filters' => ['status' => $status],
+            'filters' => [
+                'status' => $status,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ],
             'typeLabels' => LeaveRequest::typeLabels(),
         ]);
     }

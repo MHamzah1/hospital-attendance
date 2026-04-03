@@ -370,4 +370,248 @@ class BulkImportController extends Controller
 
         return response()->download($tempFile, 'Template_DATA_KARYAWAN.xlsx')->deleteFileAfterSend(true);
     }
+
+    /**
+     * Show schedule import form
+     */
+    public function scheduleImport()
+    {
+        return Inertia::render('Schedule/Import');
+    }
+
+    /**
+     * Schedule import preview
+     */
+    public function schedulePreview(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file',
+        ]);
+
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format file tidak didukung. Gunakan .xlsx, .xls, atau .csv',
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $rows = [];
+            $headers = [];
+
+            if (in_array($file->getClientOriginalExtension(), ['csv'])) {
+                $handle = fopen($file->getPathname(), 'r');
+                $headers = fgetcsv($handle);
+                
+                $rowCount = 0;
+                while ($rowCount < 5 && ($row = fgetcsv($handle)) !== false) {
+                    $rows[] = $row;
+                    $rowCount++;
+                }
+                fclose($handle);
+                
+                $handle = fopen($file->getPathname(), 'r');
+                fgetcsv($handle);
+                $totalRows = 0;
+                while (fgetcsv($handle) !== false) {
+                    $totalRows++;
+                }
+                fclose($handle);
+            } else {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+                $worksheet = $spreadsheet->getActiveSheet();
+                $sheetData = $worksheet->toArray();
+                while (!empty($sheetData) && empty(array_filter($sheetData[0]))) {
+                    array_shift($sheetData);
+                }
+                if (empty($sheetData)) {
+                    throw new \Exception('Sheet kosong atau tidak ada data.');
+                }
+                $headers = array_shift($sheetData);
+                $rows = array_slice($sheetData, 0, 5);
+                $totalRows = count($sheetData);
+            }
+
+            return response()->json([
+                'success' => true,
+                'headers' => $headers,
+                'preview' => $rows,
+                'total_rows' => $totalRows,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error membaca file: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Handle schedule bulk import
+     */
+    public function scheduleStore(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+
+        set_time_limit(300);
+
+        $request->validate([
+            'file' => 'required|file',
+            'mapping' => 'required',
+        ]);
+
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format file tidak didukung.',
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $rows = [];
+
+            if ($file->getClientOriginalExtension() === 'csv') {
+                $handle = fopen($file->getPathname(), 'r');
+                fgetcsv($handle);
+                while (($row = fgetcsv($handle)) !== false) {
+                    if (!empty(array_filter($row))) {
+                        $rows[] = $row;
+                    }
+                }
+                fclose($handle);
+            } else {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
+                $worksheet = $spreadsheet->getActiveSheet();
+                $sheetData = $worksheet->toArray();
+                while (!empty($sheetData) && empty(array_filter($sheetData[0]))) {
+                    array_shift($sheetData);
+                }
+                array_shift($sheetData);
+                $rows = $sheetData;
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet, $worksheet, $sheetData);
+            }
+
+            $mapping = $request->get('mapping');
+            if (is_string($mapping)) {
+                $mapping = json_decode($mapping, true);
+            }
+
+            $imported = 0;
+            $errors = [];
+            $shifts = \App\Models\Shift::all()->keyBy('name');
+            $users = User::all()->keyBy('nip');
+
+            foreach ($rows as $rowIndex => $row) {
+                if (empty(array_filter($row))) continue;
+
+                try {
+                    $nip = isset($mapping['nip']) && isset($row[$mapping['nip'] - 1]) ? trim($row[$mapping['nip'] - 1]) : null;
+                    $date = isset($mapping['date']) && isset($row[$mapping['date'] - 1]) ? $this->parseDate($row[$mapping['date'] - 1]) : null;
+                    $shiftName = isset($mapping['shift']) && isset($row[$mapping['shift'] - 1]) ? trim($row[$mapping['shift'] - 1]) : null;
+
+                    if (!$nip) {
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": NIP tidak boleh kosong";
+                        continue;
+                    }
+                    if (!$date) {
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": Tanggal tidak boleh kosong";
+                        continue;
+                    }
+                    if (!$shiftName) {
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": Shift tidak boleh kosong";
+                        continue;
+                    }
+
+                    if (!isset($users[$nip])) {
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": NIP $nip tidak ditemukan";
+                        continue;
+                    }
+
+                    if (!isset($shifts[$shiftName])) {
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": Shift '$shiftName' tidak ditemukan";
+                        continue;
+                    }
+
+                    \App\Models\UserSchedule::updateOrCreate(
+                        ['user_id' => $users[$nip]->id, 'date' => $date],
+                        ['shift_id' => $shifts[$shiftName]->id, 'created_by' => $request->user()->id]
+                    );
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Baris " . ($rowIndex + 2) . ": " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil import $imported jadwal",
+                'imported' => $imported,
+                'errors' => $errors,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Download schedule template
+     */
+    public function downloadScheduleTemplate()
+    {
+        $templatePath = base_path('JADWAL KARYAWAN.xlsx');
+
+        if (file_exists($templatePath)) {
+            return response()->download($templatePath, 'Template_JADWAL_KARYAWAN.xlsx');
+        }
+
+        $headers = ['NIP', 'TANGGAL', 'NAMA_SHIFT'];
+        $shifts = \App\Models\Shift::all();
+        $shiftNames = $shifts->pluck('name')->implode(', ');
+
+        $sampleData = [
+            ['2021C171', '2026-04-01', 'Shift Pagi'],
+            ['2021C171', '2026-04-02', 'Shift Sore'],
+            ['2021C172', '2026-04-01', 'Shift Malam'],
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Jadwal Karyawan');
+        $sheet->fromArray($headers, null, 'A1');
+        
+        foreach ($sampleData as $idx => $row) {
+            $sheet->fromArray($row, null, 'A' . ($idx + 2));
+        }
+
+        foreach (range('A', 'C') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Add shift reference sheet
+        $shiftSheet = $spreadsheet->createSheet();
+        $shiftSheet->setTitle('Daftar Shift');
+        $shiftSheet->fromArray(['Nama Shift'], null, 'A1');
+        foreach ($shifts as $idx => $shift) {
+            $shiftSheet->setCellValue('A' . ($idx + 2), $shift->name);
+        }
+        $shiftSheet->getColumnDimension('A')->setAutoSize(true);
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $tempFile = tempnam(sys_get_temp_dir(), 'schedule_template');
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, 'Template_JADWAL_KARYAWAN.xlsx')->deleteFileAfterSend(true);
+    }
 }

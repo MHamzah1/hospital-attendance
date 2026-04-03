@@ -1,0 +1,9 @@
+saya mau buat 6 menu. Dashboard, Absensi, Pengajuan Cuti, Pengajuan Lembur, Penggajian, Jadwal Karyawan, dan Kelola Karyawan (Jadwal Karyawan belum ada)
+
+pada menu Kelola Karyawan tolong di hapus dulu semua dari databasenya, lalu saya mau import data karyawan secara massal (bisa satuan juga), berikan saya akses import massal dengan cara import file excel (xlsx) contoh filenya yang bernama DATA KARYAWAN.xlsx
+
+pada menu Jadwal karyawan tolong di hapus dulu semua dari databasenya, lalu saya mau import jadwal karyawan secara massal, berikan saya akses import massal dengan cara import file excel (xlsx) contoh filenya yang bernama JADWAL KARYAWAN.xlsx
+
+pada menu pengajuan cuti dan pengajuan lembur beri filter search, berikan tanggal dari - tanggal sampai
+
+ketika admin sudah import massal karyawan, ubah cara login karyawannya menggunakan "NIP" sebagai id dan passwordnya, lalu ubah id admin jangan pakai email, hanya cukup idnya "admin", passwordnya "admin123"

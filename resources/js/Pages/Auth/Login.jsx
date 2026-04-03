@@ -4,7 +4,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
+        username: '',
         password: '',
         remember: false,
     });
@@ -32,23 +32,23 @@ export default function Login({ status, canResetPassword }) {
             )}
 
             <form onSubmit={submit} className="mt-8 space-y-5">
-                {/* Email */}
+                {/* Username/NIP/Email */}
                 <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Email
+                    <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-1.5">
+                        NIP / Email / Admin ID
                     </label>
                     <input
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
+                        id="username"
+                        type="text"
+                        name="username"
+                        value={data.username}
                         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
-                        placeholder="nama@rsmandiri.co.id"
+                        placeholder="Masukkan NIP, Email, atau Admin"
                         autoComplete="username"
                         autoFocus
-                        onChange={(e) => setData('email', e.target.value)}
+                        onChange={(e) => setData('username', e.target.value)}
                     />
-                    <InputError message={errors.email} className="mt-1.5" />
+                    <InputError message={errors.username} className="mt-1.5" />
                 </div>
 
                 {/* Password */}

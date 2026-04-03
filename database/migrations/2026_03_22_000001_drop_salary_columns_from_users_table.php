@@ -8,13 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip if columns don't exist
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'base_salary',
-                'position_allowance',
-                'meal_allowance',
-                'transport_allowance',
-            ]);
+            try {
+                $table->dropColumn([
+                    'base_salary',
+                    'position_allowance',
+                    'meal_allowance',
+                    'transport_allowance',
+                ]);
+            } catch (\Exception $e) {
+                // Columns don't exist, skip
+            }
         });
     }
 
