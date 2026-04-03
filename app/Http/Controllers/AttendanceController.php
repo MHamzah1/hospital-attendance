@@ -203,27 +203,33 @@ class AttendanceController extends Controller
         // Kalkulasi durasi keterlambatan (jam, menit, detik)
         $attendance->late_duration = $this->calculateLateDuration($attendance);
         
-        // Jika status late tapi late_duration masih null, coba hitung lagi dari UserSchedule
+        // Jika status late tapi late_duration masih null, coba hitung lagi dengan explicit NIP match
         if ($attendance->status === 'late' && !$attendance->late_duration && $attendance->clock_in && $attendance->date && $attendance->user_id) {
-            $schedule = \App\Models\UserSchedule::with('shift')
-                ->where('user_id', $attendance->user_id)
-                ->whereDate('date', $attendance->date)
-                ->first();
+            $user = \App\Models\User::find($attendance->user_id);
             
-            if ($schedule && $schedule->shift && $schedule->shift->start_time) {
-                try {
-                    $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $schedule->shift->start_time);
-                    $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
-                    $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
-                    
-                    if ($diffSeconds > 0) {
-                        $hours   = (int) floor($diffSeconds / 3600);
-                        $minutes = (int) floor(($diffSeconds % 3600) / 60);
-                        $seconds = (int) ($diffSeconds % 60);
-                        $attendance->late_duration = "{$hours} jam {$minutes} menit {$seconds} detik";
+            if ($user && $user->nip) {
+                $schedule = \App\Models\UserSchedule::with('shift')
+                    ->whereHas('user', function ($query) use ($user) {
+                        $query->where('nip', $user->nip);
+                    })
+                    ->whereDate('date', $attendance->date)
+                    ->first();
+                
+                if ($schedule && $schedule->shift && $schedule->shift->start_time) {
+                    try {
+                        $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $schedule->shift->start_time);
+                        $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
+                        $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
+                        
+                        if ($diffSeconds > 0) {
+                            $hours   = (int) floor($diffSeconds / 3600);
+                            $minutes = (int) floor(($diffSeconds % 3600) / 60);
+                            $seconds = (int) ($diffSeconds % 60);
+                            $attendance->late_duration = "{$hours} jam {$minutes} menit {$seconds} detik";
+                        }
+                    } catch (\Exception $e) {
+                        // Gagal hitung, biarkan null
                     }
-                } catch (\Exception $e) {
-                    // Gagal hitung, biarkan null
                 }
             }
         }
@@ -233,7 +239,7 @@ class AttendanceController extends Controller
 
     /**
      * Hitung durasi keterlambatan dalam format "X jam Y menit Z detik".
-     * Mengembalikan null jika tidak terlambat atau data tidak tersedia.
+     * Match UserSchedule berdasarkan NIP user, bukan user_id.
      */
     private function calculateLateDuration(Attendance $attendance): ?string
     {
@@ -244,15 +250,23 @@ class AttendanceController extends Controller
 
         $shift = $attendance->shift;
 
-        // Fallback: Jika shift tidak ada, cari dari UserSchedule
+        // Fallback: Cari schedule dari UserSchedule berdasarkan NIP user
         if (!$shift && $attendance->user_id && $attendance->date) {
-            $schedule = \App\Models\UserSchedule::with('shift')
-                ->where('user_id', $attendance->user_id)
-                ->whereDate('date', $attendance->date)
-                ->first();
+            // Get user dengan join ke UserSchedule via NIP
+            $user = \App\Models\User::find($attendance->user_id);
             
-            if ($schedule && $schedule->shift) {
-                $shift = $schedule->shift;
+            if ($user && $user->nip) {
+                // Cari schedule berdasarkan user NIP dan date
+                $schedule = \App\Models\UserSchedule::with('shift')
+                    ->whereHas('user', function ($query) use ($user) {
+                        $query->where('nip', $user->nip);
+                    })
+                    ->whereDate('date', $attendance->date)
+                    ->first();
+                
+                if ($schedule && $schedule->shift) {
+                    $shift = $schedule->shift;
+                }
             }
         }
 

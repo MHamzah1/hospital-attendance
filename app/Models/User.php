@@ -58,4 +58,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Shift::class);
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(UserSchedule::class);
+    }
 }
