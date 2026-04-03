@@ -9,6 +9,7 @@ use App\Models\OvertimeRequest;
 use App\Models\Payroll;
 use App\Models\UserSchedule;
 use App\Models\UserScheduleHistory;
+use App\Models\Shift;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
@@ -37,11 +38,17 @@ class ClearAndSetupDatabase extends Command
         LeaveRequest::truncate();
         Attendance::truncate();
         User::truncate();
+        Shift::truncate();
 
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $this->info('Semua data berhasil dihapus.');
+
+        // Seed shifts
+        $this->line('Membuat kategori shift...');
+        $this->call('db:seed', ['--class' => 'Database\\Seeders\\ShiftSeeder']);
+        $this->info('Kategori shift berhasil dibuat.');
 
         // Create admin user
         $this->line('Membuat user admin...');

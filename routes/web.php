@@ -63,16 +63,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Employee Management (Admin Only)
     Route::middleware('admin')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+        
+        // Specific routes BEFORE parameter routes
         Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::get('/employees/import', [BulkImportController::class, 'index'])->name('employees.import');
+        Route::get('/bulk-import/download-template', [BulkImportController::class, 'downloadTemplate'])->name('bulk-import.download');
+        
+        // Bulk Import routes
+        Route::post('/bulk-import/preview', [BulkImportController::class, 'preview'])->name('bulk-import.preview');
+        Route::post('/bulk-import/process', [BulkImportController::class, 'import'])->name('bulk-import.process');
+        
+        // Parameter routes AFTER specific routes
         Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
         Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
         Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
-
-        // Bulk Import
-        Route::get('/employees/import', [BulkImportController::class, 'index'])->name('employees.import');
-        Route::post('/bulk-import/preview', [BulkImportController::class, 'preview'])->name('bulk-import.preview');
-        Route::post('/bulk-import/process', [BulkImportController::class, 'import'])->name('bulk-import.process');
-        Route::get('/bulk-import/download-template', [BulkImportController::class, 'downloadTemplate'])->name('bulk-import.download');
 
         // Schedule Import
         Route::get('/schedule/import', [BulkImportController::class, 'scheduleImport'])->name('schedule.import');

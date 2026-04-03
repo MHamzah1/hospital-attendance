@@ -12,25 +12,40 @@ export default function BulkImport({ flash }) {
     const [importResult, setImportResult] = useState(null); // { imported, errors, message }
 
     const databaseFields = [
-        { key: 'nip', label: 'NIP', aliases: ['nip', 'nipkaryawan', 'nipegawai'] },
-        { key: 'name', label: 'Nama', aliases: ['nama', 'name', 'namakaryawan', 'namalengkap'] },
-        { key: 'gender', label: 'Jenis Kelamin', aliases: ['jeniskelamin', 'gender', 'jk', 'kelamin'] },
-        { key: 'education', label: 'Pendidikan', aliases: ['pendidikan', 'education', 'pend'] },
-        { key: 'birth_place', label: 'Tempat Lahir', aliases: ['tempatlahir', 'birthplace', 'tmptlahir'] },
-        { key: 'birth_date', label: 'Tanggal Lahir', aliases: ['tanggallahir', 'tgllahir', 'birthdate'] },
-        { key: 'address', label: 'Alamat', aliases: ['alamat', 'address'] },
-        { key: 'city', label: 'Kota', aliases: ['kota', 'city', 'kabupaten'] },
-        { key: 'phone', label: 'No. HP', aliases: ['nohp', 'phone', 'telepon', 'hp', 'notelepon', 'handphone'] },
-        { key: 'department', label: 'Departemen', aliases: ['departemen', 'department', 'bagian', 'unit'] },
-        { key: 'position', label: 'Jabatan', aliases: ['jabatan', 'position', 'posisi'] },
-        { key: 'join_date', label: 'Tanggal Masuk', aliases: ['tanggalmasuk', 'joindate', 'tglmasuk', 'mulaikerja'] },
-        { key: 'npwp', label: 'NPWP', aliases: ['npwp'] },
-        { key: 'bpjs_kesehatan', label: 'BPJS Kesehatan', aliases: ['bpjskesehatan', 'bpjskes'] },
-        { key: 'bpjs_ketenagakerjaan', label: 'BPJS TK', aliases: ['bpjstk', 'bpjsketenagakerjaan', 'bpjstenagakerja'] },
-        { key: 'bank_name', label: 'Nama Rekening', aliases: ['namarekening', 'bankname', 'namabank', 'atasnama'] },
-        { key: 'bank_account', label: 'Nomor Rekening', aliases: ['nomorrekening', 'norekening', 'norek', 'bankaccount', 'rekening'] },
-        { key: 'status', label: 'Status Karyawan', aliases: ['status', 'statuskaryawan', 'sts'] },
+        { key: 'nip', label: 'NIP', aliases: ['nip', 'nipkaryawan', 'nipegawai', 'no_induk', 'nomorinduk'] },
+        { key: 'name', label: 'Nama', aliases: ['nama', 'name', 'namakaryawan', 'namalengkap', 'namakaryawan', 'nama_karyawan', 'nama_lengkap'] },
+        { key: 'gender', label: 'Jenis Kelamin', aliases: ['jeniskelamin', 'gender', 'jk', 'kelamin', 'jenis_kelamin'] },
+        { key: 'education', label: 'Pendidikan', aliases: ['pendidikan', 'education', 'pend', 'tingkatpendidikan', 'tingkat_pendidikan'] },
+        { key: 'birth_place', label: 'Tempat Lahir', aliases: ['tempatlahir', 'birthplace', 'tmptlahir', 'tempatl ahir', 'tempat_lahir', 'ttl'] },
+        { key: 'birth_date', label: 'Tanggal Lahir', aliases: ['tanggallahir', 'tgllahir', 'birthdate', 'tanggal_lahir', 'tgl_lahir', 'dob'] },
+        { key: 'address', label: 'Alamat', aliases: ['alamat', 'address', 'alamatdomisili', 'alamat_domisili'] },
+        { key: 'city', label: 'Kota', aliases: ['kota', 'city', 'kabupaten', 'kota_kabupaten'] },
+        { key: 'phone', label: 'No. HP', aliases: ['nohp', 'phone', 'telepon', 'hp', 'notelepon', 'handphone', 'nomorhp', 'no_hp', 'no_telp', 'nomor_telp'] },
+        { key: 'department', label: 'Departemen', aliases: ['departemen', 'department', 'bagian', 'unit', 'departmen'] },
+        { key: 'position', label: 'Jabatan', aliases: ['jabatan', 'position', 'posisi', 'job_title', 'jobtitle'] },
+        { key: 'base_salary', label: 'Gaji Pokok', aliases: ['gajipokok', 'gaji', 'base_salary', 'basesalary', 'basegaji', 'gajibas', 'gajidasar', 'gaji_pokok'] },
+        { key: 'position_allowance', label: 'Tunjangan Jabatan', aliases: ['tunjanganjabatan', 'tunjanganposisi', 'positionallowance', 'jabatanallowance', 'tunjangan_jabatan', 'tunjangan_posisi'] },
+        { key: 'functional_allowance', label: 'Tunjangan Fungsional', aliases: ['tunjanganfungsional', 'functionalallowance', 'tunjangan_fungsional', 'fungsi'] },
+        { key: 'special_allowance', label: 'Tunjangan Khusus', aliases: ['tunjangankhusus', 'specialallowance', 'tunjangan_khusus', 'khusus'] },
+        { key: 'meal_allowance', label: 'Tunjangan Makan', aliases: ['tunjanganmakan', 'tunjanganmakanan', 'mealallowance', 'makanallowance', 'tunjangan_makan'] },
+        { key: 'transport_allowance', label: 'Tunjangan Transportasi', aliases: ['tunjangantransportasi', 'tunjanganansportasi', 'transportallowance', 'transportasi', 'tunjangan_transportasi'] },
+        { key: 'attendance_allowance', label: 'Tunjangan Kehadiran', aliases: ['tunjangankehadiran', 'attendanceallowance', 'tunjangan_kehadiran', 'kehadiran'] },
+        { key: 'join_date', label: 'Tanggal Masuk', aliases: ['tanggalmasuk', 'joindate', 'tglmasuk', 'mulaikerja', 'tglmasukkerja', 'tanggal_masuk', 'tgl_masuk'] },
+        { key: 'npwp', label: 'NPWP', aliases: ['npwp', 'no_npwp', 'nonpwp'] },
+        { key: 'bpjs_kesehatan', label: 'BPJS Kesehatan', aliases: ['bpjskesehatan', 'bpjskes', 'bpjs_kesehatan', 'bpjs_kes', 'no_bpjs_kesehatan'] },
+        { key: 'bpjs_ketenagakerjaan', label: 'BPJS TK', aliases: ['bpjstk', 'bpjsketenagakerjaan', 'bpjstenagakerja', 'bpjs_ketenagakerjaan', 'bpjs_tk', 'no_bpjs_tk'] },
+        { key: 'bank_name', label: 'Nama Rekening', aliases: ['namarekening', 'bankname', 'namabank', 'atasnama', 'nama_rekening', 'atas_nama', 'nama_pemilik'] },
+        { key: 'bank_account', label: 'Nomor Rekening', aliases: ['nomorrekening', 'norekening', 'norek', 'bankaccount', 'rekening', 'nomor_rekening', 'no_rekening'] },
+        { key: 'status', label: 'Status Karyawan', aliases: ['status', 'statuskaryawan', 'sts', 'status_karyawan'] },
     ];
+
+    const getCsrfToken = () => {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!token) {
+            console.warn('CSRF token not found in meta tag');
+        }
+        return token ||'';
+    };
 
     const handleFileSelect = async (e) => {
         const selectedFile = e.target.files[0];
@@ -44,7 +59,7 @@ export default function BulkImport({ flash }) {
             const response = await fetch('/bulk-import/preview', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
                 },
                 body: formData,
@@ -98,7 +113,7 @@ export default function BulkImport({ flash }) {
             const response = await fetch('/bulk-import/process', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
                 },
                 body: formData,
@@ -120,7 +135,7 @@ export default function BulkImport({ flash }) {
     };
 
     const downloadTemplate = () => {
-        window.location.href = '/bulk-import/template';
+        window.location.href = route('bulk-import.download');
     };
 
     return (

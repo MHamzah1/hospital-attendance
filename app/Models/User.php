@@ -14,6 +14,8 @@ class User extends Authenticatable
         'name', 'email', 'nip', 'password', 'role', 'employee_id', 'department',
         'position', 'phone', 'address', 'join_date', 'npwp',
         'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo', 'shift_id',
+        'base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance',
+        'gender', 'education', 'birth_place', 'birth_date', 'city', 'bank_name', 'bank_account',
     ];
 
     protected $hidden = ['password', 'remember_token'];

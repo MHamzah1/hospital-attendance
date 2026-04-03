@@ -3,23 +3,40 @@ import { Head, useForm, Link } from '@inertiajs/react';
 
 export default function EmployeeEdit({ employee }) {
     const { data, setData, put, processing, errors } = useForm({
+        // Informasi Dasar
         name: employee.name || '',
         email: employee.email || '',
         password: '',
-        employee_id: employee.employee_id || '',
-        department: employee.department || '',
-        position: employee.position || '',
-        base_salary: employee.base_salary || '',
-        position_allowance: employee.position_allowance || '0',
-        meal_allowance: employee.meal_allowance || '0',
-        transport_allowance: employee.transport_allowance || '0',
+        nip: employee.nip || '',
+        gender: employee.gender || '',
+        education: employee.education || '',
+        birth_place: employee.birth_place || '',
+        birth_date: employee.birth_date || '',
+        
+        // Informasi Kontak & Departemen
         phone: employee.phone || '',
         address: employee.address || '',
+        city: employee.city || '',
+        department: employee.department || '',
+        position: employee.position || '',
         join_date: employee.join_date || '',
+        status: employee.status || 'active',
+        
+        // Komponen Gaji (7 fields)
+        base_salary: employee.base_salary || '',
+        position_allowance: employee.position_allowance || '0',
+        functional_allowance: employee.functional_allowance || '0',
+        special_allowance: employee.special_allowance || '0',
+        meal_allowance: employee.meal_allowance || '0',
+        transport_allowance: employee.transport_allowance || '0',
+        attendance_allowance: employee.attendance_allowance || '0',
+        
+        // Dokumen & Bank
         npwp: employee.npwp || '',
         bpjs_kesehatan: employee.bpjs_kesehatan || '',
         bpjs_ketenagakerjaan: employee.bpjs_ketenagakerjaan || '',
-        status: employee.status || 'active',
+        bank_name: employee.bank_name || '',
+        bank_account: employee.bank_account || '',
     });
 
     const departments = [
@@ -82,10 +99,43 @@ export default function EmployeeEdit({ employee }) {
                             Informasi Dasar
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField label="NIP" name="nip" required />
                             <InputField label="Nama Lengkap" name="name" required />
                             <InputField label="Email" name="email" type="email" required />
                             <InputField label="Password Baru" name="password" type="password" hint="Kosongkan jika tidak ingin mengubah password" />
-                            <InputField label="ID Karyawan" name="employee_id" required />
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Jenis Kelamin
+                                </label>
+                                <select
+                                    value={data.gender}
+                                    onChange={e => setData('gender', e.target.value)}
+                                    className="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                >
+                                    <option value="">Pilih Jenis Kelamin</option>
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
+                            <InputField label="Pendidikan" name="education" />
+                            <InputField label="Tempat Lahir" name="birth_place" />
+                            <InputField label="Tanggal Lahir" name="birth_date" type="date" />
+                        </div>
+                    </div>
+
+                    {/* Informasi Kontak & Departemen */}
+                    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                            </svg>
+                            Informasi Kontak & Pekerjaan
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField label="No. Telepon" name="phone" />
+                            <InputField label="Kota" name="city" />
+                            
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Departemen <span className="text-red-400">*</span>
@@ -103,7 +153,6 @@ export default function EmployeeEdit({ employee }) {
                                 {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                             </div>
                             <InputField label="Jabatan" name="position" required />
-                            <InputField label="No. Telepon" name="phone" />
                             <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
@@ -128,7 +177,7 @@ export default function EmployeeEdit({ employee }) {
                         </div>
                     </div>
 
-                    {/* Komponen Gaji */}
+                    {/* Komponen Gaji - 6 Tunjangan + Gaji Pokok */}
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
                         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,26 +185,64 @@ export default function EmployeeEdit({ employee }) {
                             </svg>
                             Komponen Gaji
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InputField label="Gaji Pokok" name="base_salary" type="number" required prefix="Rp" />
-                            <InputField label="Tunjangan Jabatan" name="position_allowance" type="number" prefix="Rp" />
-                            <InputField label="Tunjangan Makan (per hari)" name="meal_allowance" type="number" prefix="Rp" />
-                            <InputField label="Tunjangan Transport (per hari)" name="transport_allowance" type="number" prefix="Rp" />
+                        
+                        <div className="space-y-4">
+                            {/* Gaji Pokok */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-3 pb-3 border-b border-slate-200">
+                                    Gaji Pokok
+                                </label>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <InputField label="Gaji Pokok" name="base_salary" type="number" required prefix="Rp" />
+                                </div>
+                            </div>
+                            
+                            {/* Tunjangan */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-3 pb-3 border-b border-slate-200">
+                                    Tunjangan (6 Jenis)
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <InputField label="1. Tunjangan Jabatan" name="position_allowance" type="number" prefix="Rp" />
+                                    <InputField label="2. Tunjangan Fungsional" name="functional_allowance" type="number" prefix="Rp" />
+                                    <InputField label="3. Tunjangan Khusus" name="special_allowance" type="number" prefix="Rp" />
+                                    <InputField label="4. Tunjangan Makan (per hari)" name="meal_allowance" type="number" prefix="Rp" />
+                                    <InputField label="5. Tunjangan Transport (per hari)" name="transport_allowance" type="number" prefix="Rp" />
+                                    <InputField label="6. Tunjangan Kehadiran" name="attendance_allowance" type="number" prefix="Rp" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* BPJS & NPWP */}
+                    {/* BPJS, NPWP & Bank */}
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
                         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
-                            BPJS & NPWP
+                            BPJS, NPWP & Data Bank
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <InputField label="NPWP" name="npwp" />
-                            <InputField label="No. BPJS Kesehatan" name="bpjs_kesehatan" />
-                            <InputField label="No. BPJS Ketenagakerjaan" name="bpjs_ketenagakerjaan" />
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-3 pb-3 border-b border-slate-200">
+                                    Dokumen & Asuransi
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <InputField label="NPWP" name="npwp" />
+                                    <InputField label="No. BPJS Kesehatan" name="bpjs_kesehatan" />
+                                    <InputField label="No. BPJS Ketenagakerjaan" name="bpjs_ketenagakerjaan" />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-3 pb-3 border-b border-slate-200">
+                                    Data Rekening Bank
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <InputField label="Nama Bank" name="bank_name" />
+                                    <InputField label="Nomor Rekening" name="bank_account" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 

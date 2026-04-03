@@ -54,26 +54,45 @@ class EmployeeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            // Informasi Dasar
+            'nip'                     => 'required|string|unique:users',
             'name'                    => 'required|string|max:255',
             'email'                   => 'required|string|email|max:255|unique:users',
             'password'                => ['required', Rules\Password::defaults()],
-            'employee_id'             => 'required|string|unique:users',
-            'department'              => 'required|string',
-            'position'                => 'required|string',
-            'base_salary'             => 'required|numeric|min:0',
-            'position_allowance'      => 'nullable|numeric|min:0',
-            'meal_allowance'          => 'nullable|numeric|min:0',
-            'transport_allowance'     => 'nullable|numeric|min:0',
+            'gender'                  => 'nullable|string|in:L,P',
+            'education'               => 'nullable|string',
+            'birth_place'             => 'nullable|string',
+            'birth_date'              => 'nullable|date',
+            
+            // Kontak & Pekerjaan
             'phone'                   => 'nullable|string',
             'address'                 => 'nullable|string',
+            'city'                    => 'nullable|string',
+            'department'              => 'required|string',
+            'position'                => 'required|string',
             'join_date'               => 'required|date',
+            'status'                  => 'nullable|in:active,inactive',
+            
+            // Komponen Gaji
+            'base_salary'             => 'required|numeric|min:0',
+            'position_allowance'      => 'nullable|numeric|min:0',
+            'functional_allowance'    => 'nullable|numeric|min:0',
+            'special_allowance'       => 'nullable|numeric|min:0',
+            'meal_allowance'          => 'nullable|numeric|min:0',
+            'transport_allowance'     => 'nullable|numeric|min:0',
+            'attendance_allowance'    => 'nullable|numeric|min:0',
+            
+            // Data Bank & Dokumen
             'npwp'                    => 'nullable|string',
             'bpjs_kesehatan'          => 'nullable|string',
             'bpjs_ketenagakerjaan'    => 'nullable|string',
+            'bank_name'               => 'nullable|string',
+            'bank_account'            => 'nullable|string',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['role']     = 'karyawan';
+        $validated['status']   = $validated['status'] ?? 'active';
 
         User::create($validated);
 
@@ -90,22 +109,40 @@ class EmployeeController extends Controller
     public function update(Request $request, User $employee)
     {
         $validated = $request->validate([
+            // Informasi Dasar
+            'nip'                  => 'required|string|unique:users,nip,' . $employee->id,
             'name'                 => 'required|string|max:255',
             'email'                => 'required|string|email|max:255|unique:users,email,' . $employee->id,
-            'employee_id'          => 'required|string|unique:users,employee_id,' . $employee->id,
-            'department'           => 'required|string',
-            'position'             => 'required|string',
-            'base_salary'          => 'required|numeric|min:0',
-            'position_allowance'   => 'nullable|numeric|min:0',
-            'meal_allowance'       => 'nullable|numeric|min:0',
-            'transport_allowance'  => 'nullable|numeric|min:0',
+            'password'             => 'nullable|' . Rules\Password::defaults(),
+            'gender'               => 'nullable|string|in:L,P',
+            'education'            => 'nullable|string',
+            'birth_place'          => 'nullable|string',
+            'birth_date'           => 'nullable|date',
+            
+            // Kontak & Pekerjaan
             'phone'                => 'nullable|string',
             'address'              => 'nullable|string',
+            'city'                 => 'nullable|string',
+            'department'           => 'required|string',
+            'position'             => 'required|string',
             'join_date'            => 'required|date',
+            'status'               => 'required|in:active,inactive',
+            
+            // Komponen Gaji
+            'base_salary'          => 'required|numeric|min:0',
+            'position_allowance'   => 'nullable|numeric|min:0',
+            'functional_allowance' => 'nullable|numeric|min:0',
+            'special_allowance'    => 'nullable|numeric|min:0',
+            'meal_allowance'       => 'nullable|numeric|min:0',
+            'transport_allowance'  => 'nullable|numeric|min:0',
+            'attendance_allowance' => 'nullable|numeric|min:0',
+            
+            // Data Bank & Dokumen
             'npwp'                 => 'nullable|string',
             'bpjs_kesehatan'       => 'nullable|string',
             'bpjs_ketenagakerjaan' => 'nullable|string',
-            'status'               => 'required|in:active,inactive',
+            'bank_name'            => 'nullable|string',
+            'bank_account'         => 'nullable|string',
         ]);
 
         if ($request->filled('password')) {

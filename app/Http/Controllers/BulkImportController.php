@@ -207,6 +207,13 @@ class BulkImportController extends Controller
             'bpjs_ketenagakerjaan' => '',
             'bank_name' => '',
             'bank_account' => '',
+            'base_salary' => 0,
+            'position_allowance' => 0,
+            'functional_allowance' => 0,
+            'special_allowance' => 0,
+            'meal_allowance' => 0,
+            'transport_allowance' => 0,
+            'attendance_allowance' => 0,
             'status' => 'active',
         ];
 
@@ -239,6 +246,13 @@ class BulkImportController extends Controller
                 } else {
                     $value = 'active'; // default
                 }
+            }
+
+            // Handle salary/allowance fields - convert to numeric
+            if (in_array($field, ['base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance']) && $value) {
+                // Remove non-numeric characters except decimal point
+                $value = (float) preg_replace('/[^\d.]/', '', $value);
+                $value = max(0, $value); // Ensure non-negative
             }
 
             // Handle date fields - parse various formats
@@ -339,6 +353,13 @@ class BulkImportController extends Controller
             'NO_HP',
             'DEPARTEMEN',
             'JABATAN',
+            'GAJI_POKOK',
+            'TUNJANGAN_JABATAN',
+            'TUNJANGAN_FUNGSIONAL',
+            'TUNJANGAN_KHUSUS',
+            'TUNJANGAN_MAKAN',
+            'TUNJANGAN_TRANSPORTASI',
+            'TUNJANGAN_KEHADIRAN',
             'TANGGAL_MASUK',
             'NPWP',
             'BPJS_KESEHATAN',
@@ -349,8 +370,8 @@ class BulkImportController extends Controller
         ];
 
         $sampleData = [
-            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'Dokter', '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF'],
-            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Perawat', '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF'],
+            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'Dokter', 5000000, 1000000, 800000, 500000, 500000, 300000, 250000, '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF'],
+            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Perawat', 3500000, 500000, 400000, 300000, 500000, 300000, 200000, '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF'],
         ];
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -360,7 +381,7 @@ class BulkImportController extends Controller
         $sheet->fromArray($sampleData[0], null, 'A2');
         $sheet->fromArray($sampleData[1], null, 'A3');
 
-        foreach (range('A', 'S') as $col) {
+        foreach (range('A', 'W') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -381,6 +402,7 @@ class BulkImportController extends Controller
 
     /**
      * Schedule import preview
+     * Format: NO | NIP | NAMA KARYAWAN | JABATAN/UNIT | Date1 | Date2 | ... | Date31
      */
     public function schedulePreview(Request $request)
     {
@@ -435,11 +457,16 @@ class BulkImportController extends Controller
                 $totalRows = count($sheetData);
             }
 
+            // Expected format: NO | NIP | NAMA KARYAWAN | JABATAN/UNIT | Date columns
+            $expectedHeaders = ['NO', 'NIP', 'NAMA KARYAWAN', 'JABATAN/UNIT'];
+            
             return response()->json([
                 'success' => true,
                 'headers' => $headers,
+                'expected_format' => $expectedHeaders,
                 'preview' => $rows,
                 'total_rows' => $totalRows,
+                'format_info' => 'Kolom 1: NO, Kolom 2: NIP, Kolom 3: NAMA KARYAWAN, Kolom 4: JABATAN/UNIT, Kolom 5+: Tgl 1-31 (isi dengan kode shift: Pagi 1, Middle 2, Malam 1, dll)'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -451,6 +478,8 @@ class BulkImportController extends Controller
 
     /**
      * Handle schedule bulk import
+     * Format: NO | NIP | NAMA KARYAWAN | JABATAN/UNIT | Date1 | Date2 | ... | Date31
+     * Each row represents one employee with shifts for each day of the month
      */
     public function scheduleStore(Request $request)
     {
@@ -462,7 +491,8 @@ class BulkImportController extends Controller
 
         $request->validate([
             'file' => 'required|file',
-            'mapping' => 'required',
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2020|max:2100',
         ]);
 
         $allowedExtensions = ['csv', 'xlsx', 'xls'];
@@ -476,11 +506,16 @@ class BulkImportController extends Controller
 
         try {
             $file = $request->file('file');
+            $month = $request->get('month');
+            $year = $request->get('year');
+            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            
             $rows = [];
+            $headers = [];
 
             if ($file->getClientOriginalExtension() === 'csv') {
                 $handle = fopen($file->getPathname(), 'r');
-                fgetcsv($handle);
+                $headers = fgetcsv($handle);
                 while (($row = fgetcsv($handle)) !== false) {
                     if (!empty(array_filter($row))) {
                         $rows[] = $row;
@@ -494,15 +529,13 @@ class BulkImportController extends Controller
                 while (!empty($sheetData) && empty(array_filter($sheetData[0]))) {
                     array_shift($sheetData);
                 }
-                array_shift($sheetData);
+                if (empty($sheetData)) {
+                    throw new \Exception('Sheet kosong atau tidak ada data.');
+                }
+                $headers = array_shift($sheetData);
                 $rows = $sheetData;
                 $spreadsheet->disconnectWorksheets();
                 unset($spreadsheet, $worksheet, $sheetData);
-            }
-
-            $mapping = $request->get('mapping');
-            if (is_string($mapping)) {
-                $mapping = json_decode($mapping, true);
             }
 
             $imported = 0;
@@ -510,42 +543,60 @@ class BulkImportController extends Controller
             $shifts = \App\Models\Shift::all()->keyBy('name');
             $users = User::all()->keyBy('nip');
 
+            // Process each row (each employee)
             foreach ($rows as $rowIndex => $row) {
                 if (empty(array_filter($row))) continue;
 
                 try {
-                    $nip = isset($mapping['nip']) && isset($row[$mapping['nip'] - 1]) ? trim($row[$mapping['nip'] - 1]) : null;
-                    $date = isset($mapping['date']) && isset($row[$mapping['date'] - 1]) ? $this->parseDate($row[$mapping['date'] - 1]) : null;
-                    $shiftName = isset($mapping['shift']) && isset($row[$mapping['shift'] - 1]) ? trim($row[$mapping['shift'] - 1]) : null;
-
+                    // Get NIP from column 2 (index 1)
+                    $nip = isset($row[1]) ? trim($row[1]) : null;
+                    
                     if (!$nip) {
                         $errors[] = "Baris " . ($rowIndex + 2) . ": NIP tidak boleh kosong";
                         continue;
                     }
-                    if (!$date) {
-                        $errors[] = "Baris " . ($rowIndex + 2) . ": Tanggal tidak boleh kosong";
-                        continue;
-                    }
-                    if (!$shiftName) {
-                        $errors[] = "Baris " . ($rowIndex + 2) . ": Shift tidak boleh kosong";
-                        continue;
-                    }
 
                     if (!isset($users[$nip])) {
-                        $errors[] = "Baris " . ($rowIndex + 2) . ": NIP $nip tidak ditemukan";
+                        $errors[] = "Baris " . ($rowIndex + 2) . ": NIP $nip tidak ditemukan dalam sistem";
                         continue;
                     }
 
-                    if (!isset($shifts[$shiftName])) {
-                        $errors[] = "Baris " . ($rowIndex + 2) . ": Shift '$shiftName' tidak ditemukan";
-                        continue;
+                    $user = $users[$nip];
+                    $rowImported = 0;
+
+                    // Process each date column (from column 5 onwards, starting at index 4)
+                    for ($day = 1; $day <= $daysInMonth; $day++) {
+                        $columnIndex = 3 + $day; // 4 base columns (NO, NIP, Nama, Jabatan) + day number
+                        
+                        if (!isset($row[$columnIndex])) {
+                            continue;
+                        }
+
+                        $shiftName = trim($row[$columnIndex]);
+                        
+                        // Skip empty cells
+                        if (empty($shiftName)) {
+                            continue;
+                        }
+
+                        // Check if shift exists
+                        if (!isset($shifts[$shiftName])) {
+                            $errors[] = "Baris " . ($rowIndex + 2) . ", Tgl " . $day . ": Shift '$shiftName' tidak ditemukan";
+                            continue;
+                        }
+
+                        $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                        
+                        \App\Models\UserSchedule::updateOrCreate(
+                            ['user_id' => $user->id, 'date' => $date],
+                            ['shift_id' => $shifts[$shiftName]->id, 'created_by' => $request->user()->id]
+                        );
+                        $rowImported++;
                     }
 
-                    \App\Models\UserSchedule::updateOrCreate(
-                        ['user_id' => $users[$nip]->id, 'date' => $date],
-                        ['shift_id' => $shifts[$shiftName]->id, 'created_by' => $request->user()->id]
-                    );
-                    $imported++;
+                    if ($rowImported > 0) {
+                        $imported++;
+                    }
                 } catch (\Exception $e) {
                     $errors[] = "Baris " . ($rowIndex + 2) . ": " . $e->getMessage();
                 }
@@ -553,9 +604,11 @@ class BulkImportController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Berhasil import $imported jadwal",
+                'message' => "Berhasil import jadwal untuk $imported karyawan",
                 'imported' => $imported,
                 'errors' => $errors,
+                'month' => $month,
+                'year' => $year,
             ]);
         } catch (\Exception $e) {
             return response()->json([

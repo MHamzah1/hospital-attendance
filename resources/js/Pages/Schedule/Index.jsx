@@ -364,7 +364,7 @@ export default function ScheduleIndex() {
                                         </span>
                                     )}
                                     <a
-                                        href={`/schedules/template?month=${selectedMonth}&year=${selectedYear}`}
+                                        href={route('schedule.import.download')}
                                         className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                                     >
                                         <Download className="w-4 h-4" />
