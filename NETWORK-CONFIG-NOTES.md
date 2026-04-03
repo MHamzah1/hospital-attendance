@@ -1,9 +1,9 @@
 # 🏠 Network Configuration - RUMAH vs KANTOR
 
 ## 🌐 **KONFIGURASI SAAT INI (RUMAH)**
-- **IP Address**: `192.168.0.102`
-- **Laravel Server**: `http://192.168.100.50:8000`
-- **Vite Dev Server**: `http://192.168.100.50:5174`
+- **IP Address**: pakai IP lokal komputer saat ini
+- **Laravel Server**: `http://<IP-KOMPUTER>:8000`
+- **Vite Dev Server**: `http://<IP-KOMPUTER>:5173`
 - **Status**: ✅ AKTIF
 
 ---
@@ -19,18 +19,8 @@ APP_URL=http://192.168.0.102:8000
 APP_URL=http://192.168.100.50:3000
 ```
 
-### 2. **⚡ `vite.config.js`** (LINE 12)
-```javascript
-// RUMAH (SEKARANG)
-hmr: {
-    host: '192.168.100.50',
-},
-
-// KANTOR (NANTI)
-hmr: {
-    host: '192.168.100.50',
-},
-```
+### 2. **⚡ `vite.config.js`**
+Sekarang host Vite dibaca otomatis dari `APP_URL`, jadi Anda tidak perlu edit IP manual di file ini.
 
 ### 3. **🌐 Apache Virtual Host** (OPTIONAL - jika mau full network)
 **File**: `C:\xampp\apache\conf\extra\httpd-vhosts.conf`
@@ -69,18 +59,16 @@ hmr: {
 ## 🚀 **CARA SWITCH JARINGAN**
 
 ### **🏠 UNTUK DEVELOPMENT RUMAH (SEKARANG)**
-1. ✅ `.env` → `APP_URL=http://192.168.100.50:8000`
-2. ✅ `vite.config.js` → `host: '192.168.100.50'`
-3. ✅ Run: `php artisan serve --host=192.168.100.50 --port=8000`
-4. ✅ Access: `http://192.168.100.50:8000`
+1. ✅ `.env` → `APP_URL=http://<IP-KOMPUTER>:8000`
+2. ✅ Run: `php artisan serve --host=0.0.0.0 --port=8000`
+3. ✅ Run: `npm run dev`
+4. ✅ Access: `http://<IP-KOMPUTER>:8000`
 
 ### **🏢 UNTUK JARINGAN KANTOR (NANTI KEMBALI)**
-1. 🔄 `.env` → `APP_URL=http://30.30.30.97:3000`
-2. 🔄 `vite.config.js` → `host: '30.30.30.97'`
-3. 🔄 Apache VirtualHost setup (jika mau network access)
-4. 🔄 Clear cache: `php artisan config:clear`
-5. 🔄 Restart XAMPP Apache
-6. 🔄 Access: `http://30.30.30.97:3000`
+1. 🔄 `.env` → `APP_URL=http://<IP-KOMPUTER>:8000`
+2. 🔄 Pastikan Laravel berjalan dengan `--host=0.0.0.0`
+3. 🔄 Pastikan firewall mengizinkan port 8000 dan 5173
+4. 🔄 Access: `http://<IP-KOMPUTER>:8000`
 
 ---
 
@@ -97,7 +85,7 @@ php artisan cache:clear
 ### **Start Development Server**
 ```bash
 # RUMAH
-php artisan serve --host=192.168.0.102 --port=8000
+php artisan serve --host=0.0.0.0 --port=8000
 
 # KANTOR (dengan Apache XAMPP aktif)
 # Tidak perlu php artisan serve, pakai Apache directly
@@ -154,11 +142,11 @@ npm run dev &
 ---
 
 ## 🎯 **CURRENT STATUS**
-- ✅ **Laravel Server**: Running on `http://192.168.0.102:8000`
+- ✅ **Laravel Server**: Running on `http://<IP-KOMPUTER>:8000`
 - ✅ **XAMPP**: Running on localhost
-- ✅ **Vite**: Running on `http://192.168.0.102:5174`
+- ✅ **Vite**: Running on `http://<IP-KOMPUTER>:5173`
 - ✅ **Database**: MySQL via XAMPP
-- ✅ **Network**: Home network (192.168.0.x)
+- ✅ **Network**: Local network
 
 ---
 
@@ -167,7 +155,7 @@ npm run dev &
 ### **Tidak bisa akses dari HP**
 1. Pastikan HP dan laptop terhubung WiFi yang sama
 2. Cek Windows Firewall (allow port 8000)
-3. Test ping: `ping 192.168.0.102`
+3. Test ping: `ping <IP-KOMPUTER>`
 
 ### **Asset tidak load**
 1. Pastikan Vite server running (`npm run dev`)

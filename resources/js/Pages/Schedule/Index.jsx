@@ -26,10 +26,13 @@ export default function ScheduleIndex() {
     const [importFile, setImportFile] = useState(null);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState(null);
+    const [showCurrentSchedules, setShowCurrentSchedules] = useState(false);
+    const [copyMessage, setCopyMessage] = useState('');
     const importFileRef = useRef(null);
     const pasteAreaRef = useRef(null);
     const searchTimerRef = useRef(null);
     const msgTimerRef = useRef(null);
+    const copyTimerRef = useRef(null);
 
     const parseJsonOrThrow = async (response, fallbackMessage) => {
         const contentType = response.headers.get('content-type') || '';
@@ -328,6 +331,42 @@ export default function ScheduleIndex() {
         }
     };
 
+    const generateCurrentSchedulesText = () => {
+        // Generate tab-separated schedule data for current month (like Excel copy/paste format)
+        let text = '';
+        employees.forEach((emp) => {
+            const cells = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = GetDateStr(day);
+                const schedule = schedules[emp.id]?.[dateStr];
+                const shiftName = schedule?.shift?.name || '-';
+                cells.push(shiftName);
+            }
+            text += cells.join('\t') + '\n';
+        });
+        return text;
+    };
+
+    const handleCopySchedules = () => {
+        const text = generateCurrentSchedulesText();
+        if (!text.trim()) {
+            setCopyMessage('Tidak ada jadwal untuk disalin');
+            if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+            copyTimerRef.current = setTimeout(() => setCopyMessage(''), 3000);
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            setCopyMessage('✓ Jadwal disalin ke clipboard! Tar bisa langsung paste di paste area di bawah.');
+            if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+            copyTimerRef.current = setTimeout(() => setCopyMessage(''), 4000);
+        }).catch(err => {
+            setCopyMessage('Gagal menyalin ke clipboard');
+            if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+            copyTimerRef.current = setTimeout(() => setCopyMessage(''), 3000);
+        });
+    };
+
     const GetDateStr = (day) => {
         return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     };
@@ -433,6 +472,38 @@ export default function ScheduleIndex() {
                                         searchTimerRef.current = setTimeout(() => loadSchedules(), 500);
                                     }}
                                 />
+                            </div>
+
+                            {/* View Current Schedules - For Copy/Paste */}
+                            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-medium text-purple-900">
+                                        📊 Lihat Jadwal Saat Ini (Untuk Copy/Paste)
+                                    </label>
+                                    <button
+                                        onClick={() => setShowCurrentSchedules(!showCurrentSchedules)}
+                                        className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                                    >
+                                        {showCurrentSchedules ? 'Tutup' : 'Buka'}
+                                    </button>
+                                </div>
+                                
+                                {showCurrentSchedules && (
+                                    <div className="mt-3">
+                                        <div className="bg-white p-3 rounded border border-purple-200 mb-3 font-mono text-xs max-h-48 overflow-y-auto whitespace-pre-wrap break-all">
+                                            {generateCurrentSchedulesText() || 'Belum ada jadwal'}
+                                        </div>
+                                        <button
+                                            onClick={handleCopySchedules}
+                                            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium"
+                                        >
+                                            📋 Copy Semua Jadwal
+                                        </button>
+                                        {copyMessage && (
+                                            <p className="text-sm text-purple-700 mt-2">{copyMessage}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Bulk Paste Area */}

@@ -7,3 +7,5 @@ pada menu Jadwal karyawan tolong di hapus dulu semua dari databasenya, lalu saya
 pada menu pengajuan cuti dan pengajuan lembur beri filter search, berikan tanggal dari - tanggal sampai
 
 ketika admin sudah import massal karyawan, ubah cara login karyawannya menggunakan "NIP" sebagai id dan passwordnya, lalu ubah id admin jangan pakai email, hanya cukup idnya "admin", passwordnya "admin123"
+
+

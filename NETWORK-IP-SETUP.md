@@ -46,31 +46,11 @@ APP_URL=http://192.168.XXX.XXX:8000
 
 **📄 File**: `c:\xampp\htdocs\hospital-attendance\vite.config.js` (line ~17-18)
 
-**Cari bagian ini:**
-```javascript
-hmr: {
-    host: '192.168.100.50',
-},
-```
+**Sekarang file ini membaca `APP_URL` otomatis, jadi Anda tidak perlu edit IP manual lagi.**
 
-**Ubah IP ke IP Anda:**
-```javascript
-hmr: {
-    host: '192.168.XXX.XXX',  // ← Edit IP di sini
-},
-```
-
-**Contoh:**
-```javascript
-// Kantor
-hmr: {
-    host: '192.168.100.50',
-},
-
-// Rumah
-hmr: {
-    host: '192.168.0.102',
-},
+Yang penting, pastikan `APP_URL` di `.env` sudah pakai IP lokal komputer Anda, misalnya:
+```bash
+APP_URL=http://192.168.0.102:8000
 ```
 
 ---
@@ -81,7 +61,7 @@ Setelah edit kedua file di atas, jalankan ulang server:
 
 ```bash
 # Terminal 1 - Laravel Server
-php artisan serve --host=192.168.XXX.XXX --port=8000
+php artisan serve --host=0.0.0.0 --port=8000
 
 # Terminal 2 - Vite Dev Server  
 npm run dev
@@ -93,11 +73,11 @@ Ganti `192.168.XXX.XXX` dengan IP lokal Anda dari Step 1.
 
 ## 📋 File Checklist
 
-✅ **WAJIB Ganti** (2 file):
+✅ **WAJIB Ganti** (1 file):
 - [ ] `.env` → `APP_URL`
-- [ ] `vite.config.js` → `hmr.host`
 
 ❌ **TIDAK perlu ganti:**
+- `vite.config.js` untuk IP manual
 - Database connection (host = 127.0.0.1 = localhost, tetap sama)
 - Port Laravel (8000) dan Vite (5173) tetap sama
 - File konfigurasi lain
@@ -164,10 +144,10 @@ Asalkan HP dan komputer terhubung ke jaringan yang sama (WiFi/LAN yang sama).
 
 ```bash
 # Jika di kantor (IP: 192.168.100.50)
-php artisan serve --host=192.168.100.50 --port=8000
+php artisan serve --host=0.0.0.0 --port=8000
 
 # Jika di rumah (IP: 192.168.0.102)
-php artisan serve --host=192.168.0.102 --port=8000
+php artisan serve --host=0.0.0.0 --port=8000
 
 # Jika tidak tahu IP-nya, cek dulu
 ipconfig

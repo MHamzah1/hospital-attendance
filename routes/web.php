@@ -83,6 +83,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/schedule/import/preview', [BulkImportController::class, 'schedulePreview'])->name('schedule.import.preview');
         Route::post('/schedule/import', [BulkImportController::class, 'scheduleStore'])->name('schedule.import.store');
         Route::get('/schedule/import/download-template', [BulkImportController::class, 'downloadScheduleTemplate'])->name('schedule.import.download');
+
+        // Schedule Management API (for React UI with bulk import/paste)
+        Route::get('/schedules/{month}/{year}', [UserScheduleController::class, 'listAllSchedules'])->name('schedules.list');
+        Route::post('/schedules/bulk', [UserScheduleController::class, 'bulkUpdateSchedules'])->name('schedules.bulk-update');
+        Route::get('/schedules/{user}/history', [UserScheduleController::class, 'getHistory'])->name('schedules.history');
     });
 });
 
