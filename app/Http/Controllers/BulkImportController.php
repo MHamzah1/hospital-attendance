@@ -606,21 +606,6 @@ class BulkImportController extends Controller
                     $errors[] = "Baris " . ($rowIndex + 2) . ": " . $e->getMessage();
                 }
             }
-                        
-                        \App\Models\UserSchedule::updateOrCreate(
-                            ['user_id' => $user->id, 'date' => $date],
-                            ['shift_id' => $shift->id, 'created_by' => $request->user()->id]
-                        );
-                        $rowImported++;
-                    }
-
-                    if ($rowImported > 0) {
-                        $imported++;
-                    }
-                } catch (\Exception $e) {
-                    $errors[] = "Baris " . ($rowIndex + 2) . ": " . $e->getMessage();
-                }
-            }
 
             return response()->json([
                 'success' => true,
@@ -680,16 +665,20 @@ class BulkImportController extends Controller
             $colNum = 1;
 
             // NO
-            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $idx + 1);
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colNum++);
+            $sheet->setCellValue($colLetter . $rowNum, $idx + 1);
 
             // NIP
-            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->nip);
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colNum++);
+            $sheet->setCellValue($colLetter . $rowNum, $employee->nip);
 
             // NAMA KARYAWAN
-            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->name);
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colNum++);
+            $sheet->setCellValue($colLetter . $rowNum, $employee->name);
 
             // JABATAN/UNIT
-            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->position ?? '-');
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colNum++);
+            $sheet->setCellValue($colLetter . $rowNum, $employee->position ?? '-');
 
             // Days (1-31)
             $schedules = \App\Models\UserSchedule::where('user_id', $employee->id)
@@ -708,7 +697,8 @@ class BulkImportController extends Controller
                     $shift = $schedules[$day]->shift;
                     $cellValue = $shift->name;
                 }
-                $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $cellValue);
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colNum++);
+                $sheet->setCellValue($colLetter . $rowNum, $cellValue);
             }
 
             $rowNum++;

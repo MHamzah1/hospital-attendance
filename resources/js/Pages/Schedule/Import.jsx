@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import FlashMessage from '@/Components/FlashMessage';
 
@@ -29,14 +29,6 @@ export default function ScheduleImport({ flash }) {
 
     const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i);
 
-    const getCsrfToken = () => {
-        const token = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (!token) {
-            console.warn('CSRF token not found in meta tag');
-        }
-        return token || '';
-    };
-
     const handleFileSelect = async (e) => {
         const selectedFile = e.target.files[0];
         if (!selectedFile) return;
@@ -45,39 +37,22 @@ export default function ScheduleImport({ flash }) {
         const formData = new FormData();
         formData.append('file', selectedFile);
 
-        try {
-            const response = await fetch('/schedule/import/preview', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json',
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                let errorMsg = 'Gagal memproses file';
-                try {
-                    const errData = await response.json();
-                    errorMsg = errData.message || errData.errors?.file?.[0] || errorMsg;
-                } catch {
-                    errorMsg = `Server error (${response.status})`;
-                }
-                throw new Error(errorMsg);
+        router.post('/schedule/import/preview', formData, {
+            onSuccess: (page) => {
+                setFile(selectedFile);
+                setPreview(page.props.preview || page.props);
+                setStep(2);
+            },
+            onError: (errors) => {
+                alert('Error: ' + (errors.file?.[0] || 'Gagal memproses file'));
+            },
+            onFinish: () => {
+                setLoading(false);
             }
-
-            const data = await response.json();
-            setFile(selectedFile);
-            setPreview(data);
-            setStep(2);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
-    const handleProcessImport = async () => {
+    const handleProcessImport = () => {
         if (!file) return;
 
         setLoading(true);
@@ -86,29 +61,19 @@ export default function ScheduleImport({ flash }) {
         formData.append('month', month);
         formData.append('year', year);
 
-        try {
-            const response = await fetch('/schedule/import', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json',
-                },
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
+        router.post('/schedule/import', formData, {
+            onSuccess: (page) => {
+                const data = page.props.flash?.success ? {success: true, ...page.props.flash} : page.props;
                 setImportResult(data);
                 setStep(4);
-            } else {
-                alert('Error: ' + data.message);
+            },
+            onError: (errors) => {
+                alert('Error: ' + (errors.message || 'Gagal melakukan import'));
+            },
+            onFinish: () => {
+                setLoading(false);
             }
-        } catch (error) {
-            alert('Error: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
     return (

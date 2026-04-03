@@ -245,12 +245,95 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                                         {auth.user.role === 'admin_sdm' && (
                                             <td className="px-6 py-3.5 text-slate-600">{att.user?.name}</td>
                                         )}
-                                        <td className="px-6 py-3.5 text-slate-600 font-mono">{att.clock_in || '-'}</td>
-                                        <td className="px-6 py-3.5 text-slate-600 font-mono">{att.clock_out || '-'}</td>
                                         <td className="px-6 py-3.5">
-                                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[att.status]}`}>
-                                                {statusLabels[att.status]}
-                                            </span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-slate-600 font-mono">{att.clock_in || '-'}</span>
+                                                {/* Clock In Photo */}
+                                                {att.photo_in_url ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            const modal = document.createElement('div');
+                                                            modal.innerHTML = `
+                                                                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.remove()">
+                                                                    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+                                                                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                                            <h3 class="font-bold text-slate-800">Foto Clock In</h3>
+                                                                            <button onclick="this.closest('[onclick]').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button>
+                                                                        </div>
+                                                                        <div class="p-6">
+                                                                            <img src="${att.photo_in_url}" alt="Clock In Photo" class="w-full rounded-lg"/>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            `;
+                                                            document.body.appendChild(modal);
+                                                        }}
+                                                        className="flex-shrink-0 border-2 border-red-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
+                                                        title="Klik untuk memperbesar"
+                                                    >
+                                                        <img src={att.photo_in_url} alt="Clock In" className="w-16 h-16 object-cover" />
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center justify-center w-16 h-16 border-2 border-slate-200 rounded-lg bg-slate-50 flex-shrink-0">
+                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-slate-600 font-mono">{att.clock_out || '-'}</span>
+                                                {/* Clock Out Photo */}
+                                                {att.photo_out_url ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            const modal = document.createElement('div');
+                                                            modal.innerHTML = `
+                                                                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.remove()">
+                                                                    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+                                                                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                                            <h3 class="font-bold text-slate-800">Foto Clock Out</h3>
+                                                                            <button onclick="this.closest('[onclick]').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button>
+                                                                        </div>
+                                                                        <div class="p-6">
+                                                                            <img src="${att.photo_out_url}" alt="Clock Out Photo" class="w-full rounded-lg"/>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            `;
+                                                            document.body.appendChild(modal);
+                                                        }}
+                                                        className="flex-shrink-0 border-2 border-blue-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
+                                                        title="Klik untuk memperbesar"
+                                                    >
+                                                        <img src={att.photo_out_url} alt="Clock Out" className="w-16 h-16 object-cover" />
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center justify-center w-16 h-16 border-2 border-slate-200 rounded-lg bg-slate-50 flex-shrink-0">
+                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3.5">
+                                            <div>
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[att.status]}`}>
+                                                    {statusLabels[att.status]}
+                                                </span>
+                                                {att.status === 'late' && (
+                                                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                                        {att.late_duration ? (
+                                                            <p className="text-xs font-semibold text-red-700">{att.late_duration}</p>
+                                                        ) : (
+                                                            <p className="text-xs text-red-600">Jadwal tidak ditemukan untuk hari ini</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

@@ -45,7 +45,7 @@ class Shift extends Model
     {
         $startTime = Carbon::parse($this->start_time);
         $clockIn = Carbon::parse($clockInTime);
-        $tolerance = $this->late_tolerance; // in minutes
+        $tolerance = $this->late_tolerance ?? 0; // in minutes, default to 0
         
         return $clockIn->greaterThan($startTime->addMinutes($tolerance));
     }

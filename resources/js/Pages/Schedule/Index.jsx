@@ -306,7 +306,7 @@ export default function ScheduleIndex() {
             formData.append('month', selectedMonth);
             formData.append('year', selectedYear);
 
-            const response = await fetch('/schedules/import', {
+            const response = await fetch('/schedule/import', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

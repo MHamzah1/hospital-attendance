@@ -122,16 +122,16 @@ class AttendanceController extends Controller
         // Simpan foto
         $photoPath = $this->saveBase64Photo($request->photo, $user->id, 'in');
 
-        // Ambil shift karyawan
-        $shift = $user->shift;
+        // Determine status based on today's schedule
+        $status = 'present'; // Default to present
+        $shift = null;
 
-        // Tentukan status berdasarkan shift
-        if ($shift) {
+        // If schedule exists for today, use that shift
+        if ($scheduleToday && $scheduleToday->shift) {
+            $shift = $scheduleToday->shift;
             $status = $shift->isLate($now->format('H:i:s')) ? 'late' : 'present';
-        } else {
-            // Fallback default jam 08:00 jika tidak ada shift
-            $status = $now->format('H:i:s') > '08:00:00' ? 'late' : 'present';
         }
+        // Otherwise, no shift scheduled today = present (not late)
 
         Attendance::updateOrCreate(
             ['user_id' => $user->id, 'date' => $today],
@@ -195,42 +195,93 @@ class AttendanceController extends Controller
             ? Storage::disk('public')->url($attendance->photo_out)
             : null;
 
+        // Pastikan shift ter-load jika belum
+        if (!$attendance->relationLoaded('shift') && $attendance->shift_id) {
+            $attendance->load('shift');
+        }
+
         // Kalkulasi durasi keterlambatan (jam, menit, detik)
         $attendance->late_duration = $this->calculateLateDuration($attendance);
+        
+        // Jika status late tapi late_duration masih null, coba hitung lagi dari UserSchedule
+        if ($attendance->status === 'late' && !$attendance->late_duration && $attendance->clock_in && $attendance->date && $attendance->user_id) {
+            $schedule = \App\Models\UserSchedule::with('shift')
+                ->where('user_id', $attendance->user_id)
+                ->whereDate('date', $attendance->date)
+                ->first();
+            
+            if ($schedule && $schedule->shift && $schedule->shift->start_time) {
+                try {
+                    $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $schedule->shift->start_time);
+                    $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
+                    $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
+                    
+                    if ($diffSeconds > 0) {
+                        $hours   = (int) floor($diffSeconds / 3600);
+                        $minutes = (int) floor(($diffSeconds % 3600) / 60);
+                        $seconds = (int) ($diffSeconds % 60);
+                        $attendance->late_duration = "{$hours} jam {$minutes} menit {$seconds} detik";
+                    }
+                } catch (\Exception $e) {
+                    // Gagal hitung, biarkan null
+                }
+            }
+        }
 
         return $attendance;
     }
 
     /**
-     * Hitung durasi keterlambatan dalam format "Xj Ym Zd".
+     * Hitung durasi keterlambatan dalam format "X jam Y menit Z detik".
      * Mengembalikan null jika tidak terlambat atau data tidak tersedia.
      */
     private function calculateLateDuration(Attendance $attendance): ?string
     {
-        if ($attendance->status !== 'late' || !$attendance->clock_in || !$attendance->shift) {
+        // Hanya hitung jika status = late
+        if ($attendance->status !== 'late' || !$attendance->clock_in) {
             return null;
         }
 
-        $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->shift->start_time);
-        $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
+        $shift = $attendance->shift;
 
-        $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
+        // Fallback: Jika shift tidak ada, cari dari UserSchedule
+        if (!$shift && $attendance->user_id && $attendance->date) {
+            $schedule = \App\Models\UserSchedule::with('shift')
+                ->where('user_id', $attendance->user_id)
+                ->whereDate('date', $attendance->date)
+                ->first();
+            
+            if ($schedule && $schedule->shift) {
+                $shift = $schedule->shift;
+            }
+        }
 
-        // Jika clock in lebih awal atau sama dengan shift start, tidak terlambat
-        if ($diffSeconds <= 0) {
+        // Jika tetap tidak ada shift, tidak bisa hitung
+        if (!$shift || !$shift->start_time) {
             return null;
         }
 
-        $hours   = (int) floor($diffSeconds / 3600);
-        $minutes = (int) floor(($diffSeconds % 3600) / 60);
-        $seconds = (int) ($diffSeconds % 60);
+        // Parse shift start time dan clock in time
+        try {
+            $shiftStart = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $shift->start_time);
+            $clockIn    = Carbon::parse($attendance->date->format('Y-m-d') . ' ' . $attendance->clock_in);
 
-        $parts = [];
-        if ($hours > 0)   $parts[] = "{$hours}j";
-        if ($minutes > 0) $parts[] = "{$minutes}m";
-        if ($seconds > 0 || empty($parts)) $parts[] = "{$seconds}d";
+            $diffSeconds = $clockIn->diffInSeconds($shiftStart, false);
 
-        return implode(' ', $parts);
+            // Jika clock in lebih awal atau sama dengan shift start, tidak terlambat
+            if ($diffSeconds <= 0) {
+                return null;
+            }
+
+            // Hitung jam, menit, detik
+            $hours   = (int) floor($diffSeconds / 3600);
+            $minutes = (int) floor(($diffSeconds % 3600) / 60);
+            $seconds = (int) ($diffSeconds % 60);
+
+            return "{$hours} jam {$minutes} menit {$seconds} detik";
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**
