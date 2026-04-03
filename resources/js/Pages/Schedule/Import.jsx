@@ -205,7 +205,7 @@ export default function ScheduleImport({ flash }) {
                                 </div>
                             )}
 
-                            <a href="/schedule/import/download-template" className="block text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                            <a href={`/schedule/import/download-template?month=${month}&year=${year}`} className="block text-blue-600 hover:text-blue-700 font-semibold text-sm">
                                 ↓ Unduh Template Excel
                             </a>
 

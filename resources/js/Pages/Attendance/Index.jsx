@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FlashMessage from '@/Components/FlashMessage';
 import { Head, router, usePage } from '@inertiajs/react';
 
-export default function AttendanceIndex({ attendances, todayAttendance, filters }) {
+export default function AttendanceIndex({ attendances, todayAttendance, todaySchedule, filters }) {
     const { auth } = usePage().props;
     const [cameraOpen, setCameraOpen] = useState(false);
     const [cameraMode, setCameraMode] = useState('in'); // 'in' or 'out'
@@ -15,6 +15,8 @@ export default function AttendanceIndex({ attendances, todayAttendance, filters 
 
     const [month, setMonth] = useState(filters.month);
     const [year, setYear] = useState(filters.year);
+
+    const isLibur = todaySchedule?.shift?.name === 'Libur';
 
     const startCamera = useCallback(async (mode) => {
         setCameraMode(mode);
@@ -87,7 +89,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, filters 
         sick: 'Sakit',
     };
 
-    const canClockIn = !todayAttendance || !todayAttendance.clock_in;
+    const canClockIn = !isLibur && (!todayAttendance || !todayAttendance.clock_in);
     const canClockOut = todayAttendance && todayAttendance.clock_in && !todayAttendance.clock_out;
 
     return (
@@ -102,37 +104,48 @@ export default function AttendanceIndex({ attendances, todayAttendance, filters 
                         <div>
                             <h3 className="font-bold text-slate-800 text-lg">Absensi Hari Ini</h3>
                             <p className="text-slate-500 text-sm mt-1">
-                                {todayAttendance?.clock_in
+                                {isLibur ? (
+                                    <span className="text-orange-600 font-semibold">📅 Anda sedang libur hari ini</span>
+                                ) : todayAttendance?.clock_in
                                     ? `Clock In: ${todayAttendance.clock_in}${todayAttendance.clock_out ? ` | Clock Out: ${todayAttendance.clock_out}` : ''}`
                                     : 'Anda belum absen hari ini'
                                 }
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => startCamera('in')}
-                                disabled={!canClockIn}
-                                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                                    canClockIn
-                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
-                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                }`}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                Clock In
-                            </button>
-                            <button
-                                onClick={() => startCamera('out')}
-                                disabled={!canClockOut}
-                                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                                    canClockOut
-                                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                }`}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                                Clock Out
-                            </button>
+                            {isLibur ? (
+                                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-orange-100 text-orange-700">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 015.646 5.646 9 9 0 0120.354 15.354Z" /></svg>
+                                    Tidak Ada Jadwal Kerja Karena Anda Sedang Libur
+                                </div>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => startCamera('in')}
+                                        disabled={!canClockIn}
+                                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                                            canClockIn
+                                                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        Clock In
+                                    </button>
+                                    <button
+                                        onClick={() => startCamera('out')}
+                                        disabled={!canClockOut}
+                                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                                            canClockOut
+                                                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                        Clock Out
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -117,6 +117,16 @@ class ShiftSeeder extends Seeder
                 'is_active' => true,
                 'description' => 'Malam 2: 21:00 - 07:00 (melewati tengah malam)',
             ],
+            // LIBUR (Leave/Off)
+            [
+                'name' => 'Libur',
+                'start_time' => '00:00:00',
+                'end_time' => '23:59:00',
+                'late_tolerance' => 0,
+                'is_night_shift' => false,
+                'is_active' => true,
+                'description' => 'Libur: Karyawan tidak ada jadwal kerja',
+            ],
         ];
 
         foreach ($shifts as $shift) {

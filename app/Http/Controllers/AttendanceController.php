@@ -67,9 +67,19 @@ class AttendanceController extends Controller
             $todayAttendance = $this->appendPhotoUrls($todayAttendance);
         }
 
+        // Get today's schedule for the current user
+        $todaySchedule = null;
+        if (!$user->isAdmin()) {
+            $todaySchedule = \App\Models\UserSchedule::with('shift')
+                ->where('user_id', $user->id)
+                ->whereDate('date', Carbon::today())
+                ->first();
+        }
+
         return Inertia::render('Attendance/Index', [
             'attendances'    => $attendances,
             'todayAttendance'=> $todayAttendance,
+            'todaySchedule'  => $todaySchedule,
             'filters'        => [
                 'month'  => (int) $month,
                 'year'   => (int) $year,
@@ -89,6 +99,16 @@ class AttendanceController extends Controller
         $user  = $request->user();
         $today = Carbon::today();
         $now   = Carbon::now();
+
+        // Check if user has "Libur" (Leave) schedule for today
+        $scheduleToday = \App\Models\UserSchedule::with('shift')
+            ->where('user_id', $user->id)
+            ->whereDate('date', $today)
+            ->first();
+
+        if ($scheduleToday && $scheduleToday->shift && strtolower($scheduleToday->shift->name) === 'libur') {
+            return back()->withErrors(['message' => 'Tidak Ada Jadwal Kerja Karena Anda Sedang Libur']);
+        }
 
         $existing = Attendance::where('user_id', $user->id)
             ->whereDate('date', $today)

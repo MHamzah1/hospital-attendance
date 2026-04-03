@@ -540,7 +540,11 @@ class BulkImportController extends Controller
 
             $imported = 0;
             $errors = [];
-            $shifts = \App\Models\Shift::all()->keyBy('name');
+            
+            // Build shift mapping: name => shift
+            $shifts = \App\Models\Shift::all();
+            $shiftsByName = $shifts->keyBy('name');
+            
             $users = User::all()->keyBy('nip');
 
             // Process each row (each employee)
@@ -574,22 +578,38 @@ class BulkImportController extends Controller
 
                         $shiftName = trim($row[$columnIndex]);
                         
-                        // Skip empty cells
-                        if (empty($shiftName)) {
+                        // Skip empty cells or "-"
+                        if (empty($shiftName) || $shiftName === '-') {
                             continue;
                         }
 
-                        // Check if shift exists
-                        if (!isset($shifts[$shiftName])) {
+                        // Check if shift name exists
+                        if (!isset($shiftsByName[$shiftName])) {
                             $errors[] = "Baris " . ($rowIndex + 2) . ", Tgl " . $day . ": Shift '$shiftName' tidak ditemukan";
                             continue;
                         }
 
                         $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                        $shift = $shiftsByName[$shiftName];
                         
                         \App\Models\UserSchedule::updateOrCreate(
                             ['user_id' => $user->id, 'date' => $date],
-                            ['shift_id' => $shifts[$shiftName]->id, 'created_by' => $request->user()->id]
+                            ['shift_id' => $shift->id, 'created_by' => $request->user()->id]
+                        );
+                        $rowImported++;
+                    }
+
+                    if ($rowImported > 0) {
+                        $imported++;
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = "Baris " . ($rowIndex + 2) . ": " . $e->getMessage();
+                }
+            }
+                        
+                        \App\Models\UserSchedule::updateOrCreate(
+                            ['user_id' => $user->id, 'date' => $date],
+                            ['shift_id' => $shift->id, 'created_by' => $request->user()->id]
                         );
                         $rowImported++;
                     }
@@ -621,50 +641,159 @@ class BulkImportController extends Controller
     /**
      * Download schedule template
      */
-    public function downloadScheduleTemplate()
+    public function downloadScheduleTemplate(Request $request)
     {
-        $templatePath = base_path('JADWAL KARYAWAN.xlsx');
-
-        if (file_exists($templatePath)) {
-            return response()->download($templatePath, 'Template_JADWAL_KARYAWAN.xlsx');
-        }
-
-        $headers = ['NIP', 'TANGGAL', 'NAMA_SHIFT'];
-        $shifts = \App\Models\Shift::all();
-        $shiftNames = $shifts->pluck('name')->implode(', ');
-
-        $sampleData = [
-            ['2021C171', '2026-04-01', 'Shift Pagi'],
-            ['2021C171', '2026-04-02', 'Shift Sore'],
-            ['2021C172', '2026-04-01', 'Shift Malam'],
-        ];
+        // Get month/year from request, default to current month
+        $month = $request->get('month', date('m'));
+        $year = $request->get('year', date('Y'));
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Jadwal Karyawan');
+
+        // Get all employees
+        $employees = User::where('role', 'karyawan')
+            ->where('status', 'active')
+            ->orderBy('nip')
+            ->get();
+
+        // Get all shifts
+        $shifts = \App\Models\Shift::all();
+
+        // Header row: NO | NIP | NAMA KARYAWAN | JABATAN/UNIT | Dates 1-31
+        $headers = ['NO', 'NIP', 'NAMA KARYAWAN', 'JABATAN/UNIT'];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $headers[] = $day;
+        }
         $sheet->fromArray($headers, null, 'A1');
-        
-        foreach ($sampleData as $idx => $row) {
-            $sheet->fromArray($row, null, 'A' . ($idx + 2));
+
+        // Make header bold
+        $sheet->getStyle('A1:' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers)) . '1')
+            ->getFont()->setBold(true);
+        $sheet->getStyle('A1:' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers)) . '1')
+            ->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Add employee rows with existing schedules
+        $rowNum = 2;
+        foreach ($employees as $idx => $employee) {
+            $colNum = 1;
+
+            // NO
+            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $idx + 1);
+
+            // NIP
+            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->nip);
+
+            // NAMA KARYAWAN
+            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->name);
+
+            // JABATAN/UNIT
+            $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $employee->position ?? '-');
+
+            // Days (1-31)
+            $schedules = \App\Models\UserSchedule::where('user_id', $employee->id)
+                ->whereBetween('date', [
+                    sprintf('%04d-%02d-01', $year, $month),
+                    sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth)
+                ])
+                ->get()
+                ->keyBy(function ($schedule) {
+                    return (int) date('d', strtotime($schedule->date));
+                });
+
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $cellValue = '-';
+                if (isset($schedules[$day])) {
+                    $shift = $schedules[$day]->shift;
+                    $cellValue = $shift->name;
+                }
+                $sheet->setCellValueByColumnAndRow($colNum++, $rowNum, $cellValue);
+            }
+
+            $rowNum++;
         }
 
-        foreach (range('A', 'C') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // Set column widths
+        $sheet->getColumnDimension('A')->setWidth(5);
+        $sheet->getColumnDimension('B')->setWidth(12);
+        $sheet->getColumnDimension('C')->setWidth(25);
+        $sheet->getColumnDimension('D')->setWidth(20);
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(4 + $day);
+            $sheet->getColumnDimension($col)->setWidth(12);
         }
 
-        // Add shift reference sheet
+        // Add instructions
+        $instructionsSheet = $spreadsheet->createSheet();
+        $instructionsSheet->setTitle('Petunjuk');
+        $instructionsSheet->setCellValue('A1', 'Petunjuk Penggunaan Template Jadwal Karyawan');
+        $instructionsSheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+
+        $instructions = [
+            '',
+            'Format:',
+            '1. Kolom A-D: Data karyawan (NO, NIP, NAMA, JABATAN) - Jangan diedit',
+            '2. Kolom E-AE: Tanggal 1-31 - Isi dengan nama shift atau "-" (tidak ada shift)',
+            '',
+            'Nama Shift yang Tersedia:',
+        ];
+        $row = 1;
+        foreach ($instructions as $line) {
+            $instructionsSheet->setCellValue('A' . $row++, $line);
+        }
+
+        // Add shift reference - now showing full names
+        foreach ($shifts as $shift) {
+            $instructionsSheet->setCellValue('A' . $row, $shift->name);
+            $row++;
+        }
+
+        $instructions2 = [
+            '',
+            'Contoh:',
+            'Jika karyawan kerja Pagi 1 pada tgl 1: isi "Pagi 1"',
+            'Jika karyawan libur pada tgl 2: isi "Libur"',
+            'Jika karyawan tidak ada shift: isi "-"',
+            '',
+            'Catatan:',
+            '- Jangan hapus kolom A-D (Data karyawan)',
+            '- Jangan menambah/mengurangi karyawan',  
+            '- Hanya edit kolom tanggal (E-AE)',
+            '- Nama shift harus tepat sesuai daftar yang tersedia',
+        ];
+        foreach ($instructions2 as $line) {
+            $instructionsSheet->setCellValue('A' . $row++, $line);
+        }
+
+        $instructionsSheet->getColumnDimension('A')->setWidth(60);
+
+        // Add daftar shift reference sheet
         $shiftSheet = $spreadsheet->createSheet();
         $shiftSheet->setTitle('Daftar Shift');
-        $shiftSheet->fromArray(['Nama Shift'], null, 'A1');
-        foreach ($shifts as $idx => $shift) {
-            $shiftSheet->setCellValue('A' . ($idx + 2), $shift->name);
+        $shiftHeaders = ['Nama Shift', 'Jam Kerja', 'Deskripsi'];
+        $shiftSheet->fromArray($shiftHeaders, null, 'A1');
+        $shiftSheet->getStyle('A1:C1')->getFont()->setBold(true);
+
+        $shiftRow = 2;
+        foreach ($shifts as $shift) {
+            $startTime = date('H:i', strtotime($shift->start_time));
+            $endTime = date('H:i', strtotime($shift->end_time));
+            $shiftSheet->setCellValue('A' . $shiftRow, $shift->name);
+            $shiftSheet->setCellValue('B' . $shiftRow, "$startTime - $endTime");
+            $shiftSheet->setCellValue('C' . $shiftRow, $shift->description ?? '-');
+            $shiftRow++;
         }
-        $shiftSheet->getColumnDimension('A')->setAutoSize(true);
+
+        $shiftSheet->getColumnDimension('A')->setWidth(15);
+        $shiftSheet->getColumnDimension('B')->setWidth(15);
+        $shiftSheet->getColumnDimension('C')->setWidth(30);
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = sprintf('Template_JADWAL_KARYAWAN_%04d_%02d.xlsx', $year, $month);
         $tempFile = tempnam(sys_get_temp_dir(), 'schedule_template');
         $writer->save($tempFile);
 
-        return response()->download($tempFile, 'Template_JADWAL_KARYAWAN.xlsx')->deleteFileAfterSend(true);
+        return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
     }
 }
