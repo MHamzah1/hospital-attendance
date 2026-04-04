@@ -50,17 +50,17 @@ export default function GuestLayout({ children }) {
             <div className="flex flex-1 flex-col items-center justify-center bg-slate-50 px-6 py-12 lg:px-12">
                 {/* Mobile logo */}
                 <div className="lg:hidden mb-8 text-center">
-                    <Link href="/" className="inline-flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                    <Link href="/" className="inline-flex flex-col items-center gap-3">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg overflow-hidden">
                             <img 
                             src="/logo.png" 
                             alt="Logo" 
-                            className="h-full w-full object-cover"
+                            className="h-16 w-16 object-contain"
                             />
-                            </div>
-                        <div className="text-left">
-                            <p className="text-lg font-bold text-slate-800">RS Kartika Husada Setu</p>
-                            <p className="text-xs text-emerald-600 font-medium">Sistem Absensi</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xl font-bold text-slate-800">RS Kartika Husada Setu</p>
+                            <p className="text-sm text-emerald-600 font-medium">Sistem Absensi</p>
                         </div>
                     </Link>
                 </div>

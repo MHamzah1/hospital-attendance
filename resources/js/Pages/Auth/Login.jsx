@@ -69,8 +69,8 @@ export default function Login({ status, canResetPassword }) {
                     <InputError message={errors.password} className="mt-1.5" />
                 </div>
 
-                {/* Remember & Forgot */}
-                <div className="flex items-center justify-between">
+                {/* Remember */}
+                <div className="flex items-center">
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input
                             type="checkbox"
@@ -81,15 +81,6 @@ export default function Login({ status, canResetPassword }) {
                         />
                         <span className="text-sm text-slate-600">Ingat saya</span>
                     </label>
-
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-                        >
-                            Lupa password?
-                        </Link>
-                    )}
                 </div>
 
                 {/* Submit */}
@@ -106,13 +97,10 @@ export default function Login({ status, canResetPassword }) {
                     ) : 'Masuk'}
                 </button>
 
-                {/* Register link */}
-                <p className="text-center text-sm text-slate-500">
-                    Belum punya akun?{' '}
-                    <Link href={route('register')} className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-                        Daftar sekarang
-                    </Link>
-                </p>
+                
+                <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
+                        &copy; {new Date().getFullYear()} Created by <span className="text-emerald-400 font-medium">Wahyu Ardiansyah</span>
+                    </footer>
             </form>
         </GuestLayout>
     );

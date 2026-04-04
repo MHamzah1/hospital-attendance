@@ -11,15 +11,15 @@ export default function Welcome({ auth }) {
                 <div className="relative z-10 w-full max-w-5xl px-6 lg:px-8 flex flex-col min-h-screen">
                     <nav className="flex items-center justify-between pb-12 pt-6">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                            <div className="flex items-center justify-center rounded-xl bg-gradient-to-br">
                             <img 
                             src="/logo.png" 
                             alt="Logo" 
-                            className="h-16 w-16 object-cover"
+                            className="h-14 w-14 sm:h-20 sm:w-20 object-cover"
                             />
                             </div>
-                            <span className="text-xl font-bold text-white tracking-wide">
-                                RSKHS <span className="h-14 w-14 font-light text-orange-400">Attendance</span>
+                            <span className="text-base sm:text-xl font-bold text-white tracking-wide">
+                                RSKHS <span className="font-light text-orange-400">Attendance</span>
                             </span>
                         </div>
 
@@ -53,7 +53,7 @@ export default function Welcome({ auth }) {
                             Sistem Absensi Pegawai Terintegrasi
                         </div>
 
-                        <h1 className="text-center text-5xl font-extrabold tracking-tight text-white lg:text-7xl">
+                        <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-tight text-white lg:text-7xl">
                             Kelola Kehadiran <br className="hidden lg:block" />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Lebih Efisien</span>
                         </h1>
@@ -76,7 +76,7 @@ export default function Welcome({ auth }) {
                     </main>
 
                     <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
-                        &copy; {new Date().getFullYear()} Rumah Sakit Kartika Husada Setu. Seluruh hak cipta dilindungi.
+                        &copy; {new Date().getFullYear()} Created by <span className="text-emerald-400 font-medium">Wahyu Ardiansyah</span>
                     </footer>
                 </div>
             </div>
