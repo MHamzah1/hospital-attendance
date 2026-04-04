@@ -180,23 +180,23 @@ export default function AuthenticatedLayout({ header, children }) {
             {/* Main content */}
             <div className="flex flex-1 flex-col overflow-hidden">
                 {/* Top bar */}
-                <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
-                    <div className="flex items-center gap-4">
+                <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:px-6 lg:py-4 shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="lg:hidden rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                            className="lg:hidden rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors flex-shrink-0"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
                         {typeof header === 'string' ? (
-                            <h1 className="text-xl font-bold text-slate-800">{header}</h1>
+                            <h1 className="text-lg lg:text-xl font-bold text-slate-800 truncate">{header}</h1>
                         ) : (
                             header
                         )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                         <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             Online
@@ -205,7 +205,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+                <main className="flex-1 overflow-y-auto p-4 pb-8 lg:p-8">
                     {children}
                 </main>
             </div>

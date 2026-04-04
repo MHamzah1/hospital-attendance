@@ -3,13 +3,15 @@ echo =====================================
 echo LAN Access - Hospital Attendance
 echo =====================================
 echo.
-echo Pastikan file .env sudah berisi APP_URL dengan IP komputer ini,
-echo misalnya http://192.168.0.102:8000
+echo IP Komputer ini: 100.114.24.44
 echo.
-echo Menjalankan server untuk akses device lain...
+echo Buka dari device lain: http://100.114.24.44:8080
+echo Dari HP, sistem otomatis tampil versi mobile.
 echo.
-start "Laravel Server" php artisan serve --host=0.0.0.0 --port=8000
+echo Menjalankan Vite Dev Server untuk aset...
+echo.
 start "Vite Dev Server" npm run dev
 echo.
-echo Buka dari device lain menggunakan IP komputer ini.
-echo Contoh: http://192.168.0.102:8000
+echo Pastikan XAMPP Apache sudah berjalan (port 8080).
+echo Lalu buka http://100.114.24.44:8080 dari device lain.
+pause
