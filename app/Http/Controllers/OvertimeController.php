@@ -15,6 +15,7 @@ class OvertimeController extends Controller
         $status = $request->get('status', 'all');
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
+        $search = $request->get('search', '');
 
         $query = $user->isAdmin()
             ? OvertimeRequest::with('user', 'approver')
@@ -32,7 +33,16 @@ class OvertimeController extends Controller
             $query->where('date', '<=', $dateTo);
         }
 
-        $overtimes = $query->latest()->paginate(15);
+        if ($search && $user->isAdmin()) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($uq) use ($search) {
+                    $uq->where('name', 'like', "%{$search}%")
+                       ->orWhere('nip', 'like', "%{$search}%");
+                })->orWhere('reason', 'like', "%{$search}%");
+            });
+        }
+
+        $overtimes = $query->latest()->paginate(15)->withQueryString();
 
         return Inertia::render('Overtime/Index', [
             'overtimes' => $overtimes,
@@ -40,6 +50,7 @@ class OvertimeController extends Controller
                 'status' => $status,
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
+                'search' => $search,
             ],
         ]);
     }

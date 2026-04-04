@@ -15,6 +15,7 @@ class LeaveController extends Controller
         $status = $request->get('status', 'all');
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
+        $search = $request->get('search', '');
 
         $query = $user->isAdmin()
             ? LeaveRequest::with('user', 'approver')
@@ -32,7 +33,16 @@ class LeaveController extends Controller
             $query->where('end_date', '<=', $dateTo);
         }
 
-        $leaves = $query->latest()->paginate(15);
+        if ($search && $user->isAdmin()) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($uq) use ($search) {
+                    $uq->where('name', 'like', "%{$search}%")
+                       ->orWhere('nip', 'like', "%{$search}%");
+                })->orWhere('reason', 'like', "%{$search}%");
+            });
+        }
+
+        $leaves = $query->latest()->paginate(15)->withQueryString();
 
         return Inertia::render('Leave/Index', [
             'leaves' => $leaves,
@@ -40,6 +50,7 @@ class LeaveController extends Controller
                 'status' => $status,
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
+                'search' => $search,
             ],
             'typeLabels' => LeaveRequest::typeLabels(),
         ]);
@@ -64,15 +75,8 @@ class LeaveController extends Controller
         $startDate = Carbon::parse($validated['start_date']);
         $endDate = Carbon::parse($validated['end_date']);
 
-        // Calculate working days (exclude weekends)
-        $totalDays = 0;
-        $current = $startDate->copy();
-        while ($current->lte($endDate)) {
-            if (!$current->isWeekend()) {
-                $totalDays++;
-            }
-            $current->addDay();
-        }
+        // Hitung semua hari kalender (termasuk sabtu, minggu, tanggal merah)
+        $totalDays = $startDate->diffInDays($endDate) + 1;
 
         LeaveRequest::create([
             'user_id' => $request->user()->id,

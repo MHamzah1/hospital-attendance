@@ -200,6 +200,17 @@ class AttendanceController extends Controller
             $attendance->load('shift');
         }
 
+        // Fallback: jika shift masih null, cari dari UserSchedule
+        if (!$attendance->shift && $attendance->user_id && $attendance->date) {
+            $schedule = \App\Models\UserSchedule::with('shift')
+                ->where('user_id', $attendance->user_id)
+                ->whereDate('date', $attendance->date)
+                ->first();
+            if ($schedule && $schedule->shift) {
+                $attendance->setRelation('shift', $schedule->shift);
+            }
+        }
+
         // Kalkulasi durasi keterlambatan (jam, menit, detik)
         $attendance->late_duration = $this->calculateLateDuration($attendance);
         

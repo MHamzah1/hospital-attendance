@@ -220,106 +220,157 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Attendance List */}
             <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="bg-slate-50/80">
-                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tanggal</th>
-                                {auth.user.role === 'admin_sdm' && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Karyawan</th>}
-                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Clock In</th>
-                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Clock Out</th>
-                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {attendances?.data?.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">Tidak ada data absensi</td></tr>
-                            ) : (
-                                attendances?.data?.map((att) => (
+
+                {attendances?.data?.length === 0 ? (
+                    <p className="px-6 py-12 text-center text-slate-400">Tidak ada data absensi</p>
+                ) : (<>
+                    {/* ── Mobile cards (hidden on md+) ── */}
+                    <div className="md:hidden divide-y divide-slate-100">
+                        {attendances?.data?.map((att) => (
+                            <div key={att.id} className="p-4">
+                                {/* Row 1: date + status */}
+                                <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                        <p className="font-semibold text-slate-800 text-sm">
+                                            {new Date(att.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </p>
+                                        {auth.user.role === 'admin_sdm' && (
+                                            <p className="text-xs text-slate-500 mt-0.5">{att.user?.name}</p>
+                                        )}
+                                        {att.shift && (
+                                            <p className="text-xs text-indigo-600 font-medium mt-0.5">
+                                                {att.shift.name}
+                                                {att.shift.start_time && att.shift.end_time && (
+                                                    <span className="text-slate-400 font-normal ml-1">
+                                                        ({att.shift.start_time.slice(0,5)} – {att.shift.end_time.slice(0,5)})
+                                                    </span>
+                                                )}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${statusColors[att.status]}`}>
+                                        {statusLabels[att.status]}
+                                    </span>
+                                </div>
+
+                                {/* Row 2: clock in + clock out side by side */}
+                                <div className="flex gap-3">
+                                    {/* Clock In */}
+                                    <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3">
+                                        {att.photo_in_url ? (
+                                            <button
+                                                onClick={() => { const m=document.createElement('div'); m.innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.parentElement.remove()"><div class="bg-white rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()"><div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><h3 class="font-bold text-slate-800 text-sm">Foto Clock In</h3><button onclick="this.closest('.fixed').parentElement.remove()" class="text-slate-400 text-lg leading-none">✕</button></div><div class="p-4"><img src="${att.photo_in_url}" alt="Clock In" class="w-full rounded-lg"/></div></div></div>`; document.body.appendChild(m); }}
+                                                className="flex-shrink-0 rounded-lg overflow-hidden border-2 border-emerald-400 hover:opacity-80 transition-opacity"
+                                            >
+                                                <img src={att.photo_in_url} alt="Clock In" className="w-12 h-12 object-cover" />
+                                            </button>
+                                        ) : (
+                                            <div className="flex-shrink-0 w-12 h-12 rounded-lg border-2 border-slate-200 bg-white flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-emerald-700 font-semibold">Clock In</p>
+                                            <p className="text-sm font-mono font-bold text-slate-800">{att.clock_in || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Clock Out */}
+                                    <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-3">
+                                        {att.photo_out_url ? (
+                                            <button
+                                                onClick={() => { const m=document.createElement('div'); m.innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.parentElement.remove()"><div class="bg-white rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()"><div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><h3 class="font-bold text-slate-800 text-sm">Foto Clock Out</h3><button onclick="this.closest('.fixed').parentElement.remove()" class="text-slate-400 text-lg leading-none">✕</button></div><div class="p-4"><img src="${att.photo_out_url}" alt="Clock Out" class="w-full rounded-lg"/></div></div></div>`; document.body.appendChild(m); }}
+                                                className="flex-shrink-0 rounded-lg overflow-hidden border-2 border-blue-400 hover:opacity-80 transition-opacity"
+                                            >
+                                                <img src={att.photo_out_url} alt="Clock Out" className="w-12 h-12 object-cover" />
+                                            </button>
+                                        ) : (
+                                            <div className="flex-shrink-0 w-12 h-12 rounded-lg border-2 border-slate-200 bg-white flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-blue-700 font-semibold">Clock Out</p>
+                                            <p className="text-sm font-mono font-bold text-slate-800">{att.clock_out || '-'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Late duration */}
+                                {att.status === 'late' && (
+                                    <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <p className="text-xs font-semibold text-red-700">
+                                            {att.late_duration || 'Jadwal tidak ditemukan'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ── Desktop table (hidden on mobile) ── */}
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50/80">
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap w-36">Tanggal</th>
+                                    {auth.user.role === 'admin_sdm' && <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-40">Karyawan</th>}
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Shift</th>
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">Jam</th>
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Clock In</th>
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Clock Out</th>
+                                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {attendances?.data?.map((att) => (
                                     <tr key={att.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-3.5 font-medium text-slate-700">
+                                        <td className="px-4 py-3.5 font-medium text-slate-700 whitespace-nowrap">
                                             {new Date(att.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
                                         {auth.user.role === 'admin_sdm' && (
-                                            <td className="px-6 py-3.5 text-slate-600">{att.user?.name}</td>
+                                            <td className="px-4 py-3.5 text-slate-700 font-medium">{att.user?.name}</td>
                                         )}
-                                        <td className="px-6 py-3.5">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-slate-600 font-mono">{att.clock_in || '-'}</span>
-                                                {/* Clock In Photo */}
+                                        <td className="px-4 py-3.5">
+                                            <span className="text-slate-700 font-medium">{att.shift?.name || <span className="text-slate-300">-</span>}</span>
+                                        </td>
+                                        <td className="px-4 py-3.5 whitespace-nowrap">
+                                            {att.shift?.start_time && att.shift?.end_time
+                                                ? <span className="text-slate-600 font-mono text-xs">{att.shift.start_time.slice(0,5)} – {att.shift.end_time.slice(0,5)}</span>
+                                                : <span className="text-slate-300">-</span>
+                                            }
+                                        </td>
+                                        <td className="px-4 py-3.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-600 font-mono whitespace-nowrap">{att.clock_in || '-'}</span>
                                                 {att.photo_in_url ? (
-                                                    <button
-                                                        onClick={() => {
-                                                            const modal = document.createElement('div');
-                                                            modal.innerHTML = `
-                                                                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.remove()">
-                                                                    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
-                                                                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                                                            <h3 class="font-bold text-slate-800">Foto Clock In</h3>
-                                                                            <button onclick="this.closest('[onclick]').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button>
-                                                                        </div>
-                                                                        <div class="p-6">
-                                                                            <img src="${att.photo_in_url}" alt="Clock In Photo" class="w-full rounded-lg"/>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                                                            document.body.appendChild(modal);
-                                                        }}
-                                                        className="flex-shrink-0 border-2 border-red-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
-                                                        title="Klik untuk memperbesar"
-                                                    >
+                                                    <button onClick={() => { const m=document.createElement('div'); m.innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.parentElement.remove()"><div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()"><div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between"><h3 class="font-bold text-slate-800">Foto Clock In</h3><button onclick="this.closest('.fixed').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button></div><div class="p-6"><img src="${att.photo_in_url}" alt="Clock In Photo" class="w-full rounded-lg"/></div></div></div>`; document.body.appendChild(m); }} className="flex-shrink-0 border-2 border-red-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer" title="Klik untuk memperbesar">
                                                         <img src={att.photo_in_url} alt="Clock In" className="w-16 h-16 object-cover" />
                                                     </button>
                                                 ) : (
                                                     <div className="flex items-center justify-center w-16 h-16 border-2 border-slate-200 rounded-lg bg-slate-50 flex-shrink-0">
-                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                        </svg>
+                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-3.5">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-slate-600 font-mono">{att.clock_out || '-'}</span>
-                                                {/* Clock Out Photo */}
+                                        <td className="px-4 py-3.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-600 font-mono whitespace-nowrap">{att.clock_out || '-'}</span>
                                                 {att.photo_out_url ? (
-                                                    <button
-                                                        onClick={() => {
-                                                            const modal = document.createElement('div');
-                                                            modal.innerHTML = `
-                                                                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.remove()">
-                                                                    <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
-                                                                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                                                            <h3 class="font-bold text-slate-800">Foto Clock Out</h3>
-                                                                            <button onclick="this.closest('[onclick]').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button>
-                                                                        </div>
-                                                                        <div class="p-6">
-                                                                            <img src="${att.photo_out_url}" alt="Clock Out Photo" class="w-full rounded-lg"/>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                                                            document.body.appendChild(modal);
-                                                        }}
-                                                        className="flex-shrink-0 border-2 border-blue-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
-                                                        title="Klik untuk memperbesar"
-                                                    >
+                                                    <button onClick={() => { const m=document.createElement('div'); m.innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="this.parentElement.remove()"><div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()"><div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between"><h3 class="font-bold text-slate-800">Foto Clock Out</h3><button onclick="this.closest('.fixed').parentElement.remove()" class="text-slate-400 hover:text-slate-600">✕</button></div><div class="p-6"><img src="${att.photo_out_url}" alt="Clock Out Photo" class="w-full rounded-lg"/></div></div></div>`; document.body.appendChild(m); }} className="flex-shrink-0 border-2 border-blue-500 rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer" title="Klik untuk memperbesar">
                                                         <img src={att.photo_out_url} alt="Clock Out" className="w-16 h-16 object-cover" />
                                                     </button>
                                                 ) : (
                                                     <div className="flex items-center justify-center w-16 h-16 border-2 border-slate-200 rounded-lg bg-slate-50 flex-shrink-0">
-                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                        </svg>
+                                                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-3.5">
+                                        <td className="px-4 py-3.5">
                                             <div>
                                                 <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[att.status]}`}>
                                                     {statusLabels[att.status]}
@@ -336,11 +387,11 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>)}
 
                 {/* Pagination */}
                 {attendances?.links && (
