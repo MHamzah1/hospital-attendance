@@ -96,21 +96,21 @@ export default function AuthenticatedLayout({ header, children }) {
             >
                 <div className="flex h-full flex-col">
                     {/* Logo */}
-                    <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                    <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+                        <div className="flex-shrink-0 flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-md overflow-hidden">
                             <img 
                             src="/logo.png" 
                             alt="Logo" 
-                            className="h-full w-full object-cover"
+                            className="h-10 w-10 object-contain"
                             />
-                            </div>
-                        <div>
-                            <p className="text-base font-bold text-white leading-tight">RS Kartika Husada Setu</p>
-                            <p className="text-[11px] text-emerald-400/80 font-medium">Sistem Absensi</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white leading-tight">RS Kartika Husada Setu</p>
+                            <p className="text-[16px] text-emerald-400/80 font-medium mt-0.5">Sistem Absensi</p>
                         </div>
                         <button
                             onClick={() => setSidebarOpen(false)}
-                            className="ml-auto lg:hidden text-white/60 hover:text-white p-1"
+                            className="flex-shrink-0 ml-1 lg:hidden text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
