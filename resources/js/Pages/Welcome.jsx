@@ -15,7 +15,7 @@ export default function Welcome({ auth }) {
                             <img 
                             src="/logo.png" 
                             alt="Logo" 
-                            className="h-14 w-14 sm:h-20 sm:w-20 object-cover"
+                            className="h-16 w-16 sm:h-20 sm:w-20 object-cover"
                             />
                             </div>
                             <span className="text-base sm:text-xl font-bold text-white tracking-wide">
