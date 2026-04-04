@@ -35,7 +35,7 @@ export default function Login({ status, canResetPassword }) {
                 {/* Username/NIP/Email */}
                 <div>
                     <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        NIP / Email / Admin ID
+                        Username
                     </label>
                     <input
                         id="username"
@@ -43,7 +43,7 @@ export default function Login({ status, canResetPassword }) {
                         name="username"
                         value={data.username}
                         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
-                        placeholder="Masukkan NIP, Email, atau Admin"
+                        placeholder="Masukkan Username Anda"
                         autoComplete="username"
                         autoFocus
                         onChange={(e) => setData('username', e.target.value)}
