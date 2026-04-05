@@ -2,11 +2,23 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, Link } from '@inertiajs/react';
 
-export default function OvertimeCreate() {
+export default function OvertimeCreate({ categoryRates }) {
+    const CATEGORY_LABELS = {
+        jam:       'Jam',
+        malam:     'Malam',
+        shift:     'Shift',
+        on_call:   'On Call',
+        mod:       'MOD',
+        hari_raya: 'Hari Raya',
+    };
+
+    const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+
     const [form, setForm] = useState({
         date: '',
         start_time: '',
         end_time: '',
+        category: 'jam',
         reason: '',
     });
     const [errors, setErrors] = useState({});
@@ -58,6 +70,31 @@ export default function OvertimeCreate() {
                                     className="w-full rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500" />
                                 {errors.end_time && <p className="text-red-500 text-xs mt-1">{errors.end_time}</p>}
                             </div>
+                        </div>
+
+                        {/* Kategori Lembur */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori Lembur</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setForm({...form, category: key})}
+                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                                            form.category === key
+                                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <span>{label}</span>
+                                        <span className={`text-xs font-normal mt-0.5 ${form.category === key ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                            {formatRp(categoryRates?.[key] ?? 10000)}/{key === 'jam' ? 'jam' : 'shift'}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                            {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
                         </div>
 
                         <div>

@@ -9,7 +9,7 @@ POTONGAN
 CDT (Cuti Diluar Tanggungan), Alpa, Cashbond, Piutang obat, Koreksi Upah, ADM Bank DI INPUT OLEH ADMIN.
 TOTAL POTONGAN total dari semua potongan
 
-2. LEMBUR PERKATEGORI, Misal kategori JAM (10000), Malam (20000), Shift (80000), Hari Raya (120000)
+2. LEMBUR PERKATEGORI, Misal kategori JAM (10000), Malam (20000), Shift (80000), Hari Raya (120000), On Call (50000), MOD (100000)
 
 saya mau edit lembur dibuat perkategori, Jam, Malam Shift, Hari Raya
 saya mau edit template DATA KARYAWAN, SEKARANG ADA TAMBAHAN TABEL NOMOR NPWP, NOMOR BPJS KESEHATAN, DAN NOMOR BPJS KETENAGAKERJAAN, filenya bernama "(OK) DATA KARYAWAN"

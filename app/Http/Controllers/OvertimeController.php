@@ -55,32 +55,60 @@ class OvertimeController extends Controller
         ]);
     }
 
+    // Tarif default per kategori (Rp)
+    public static array $categoryRates = [
+        'jam'        => 10000,
+        'malam'      => 20000,
+        'shift'      => 80000,
+        'on_call'    => 50000,
+        'mod'        => 100000,
+        'hari_raya'  => 120000,
+    ];
+
     public function create()
     {
-        return Inertia::render('Overtime/Create');
+        return Inertia::render('Overtime/Create', [
+            'categoryRates' => self::$categoryRates,
+        ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date' => 'required|date',
+            'date'       => 'required|date',
             'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'reason' => 'required|string|max:500',
+            'end_time'   => 'required|date_format:H:i',
+            'category'   => 'required|in:jam,malam,shift,on_call,mod,hari_raya',
+            'reason'     => 'required|string|max:500',
         ]);
 
         $start = Carbon::parse($validated['date'] . ' ' . $validated['start_time']);
-        $end = Carbon::parse($validated['date'] . ' ' . $validated['end_time']);
-        $totalHours = round($end->diffInMinutes($start) / 60, 2);
+        $end   = Carbon::parse($validated['date'] . ' ' . $validated['end_time']);
+
+        // Handle overnight shifts (end time < start time)
+        if ($end->lessThanOrEqualTo($start)) {
+            $end->addDay();
+        }
+
+        $totalHours = round(abs($end->diffInMinutes($start)) / 60, 2);
+        $rate       = self::$categoryRates[$validated['category']] ?? 10000;
+
+        // Jam = per hour × total hours; semua kategori lain = flat rate per shift
+        $totalPay = $validated['category'] === 'jam'
+            ? $totalHours * $rate
+            : $rate;
 
         OvertimeRequest::create([
-            'user_id' => $request->user()->id,
-            'date' => $validated['date'],
-            'start_time' => $validated['start_time'],
-            'end_time' => $validated['end_time'],
-            'total_hours' => $totalHours,
-            'reason' => $validated['reason'],
-            'status' => 'pending',
+            'user_id'      => $request->user()->id,
+            'date'         => $validated['date'],
+            'start_time'   => $validated['start_time'],
+            'end_time'     => $validated['end_time'],
+            'total_hours'  => $totalHours,
+            'category'     => $validated['category'],
+            'rate_per_hour' => $rate,
+            'total_pay'    => $totalPay,
+            'reason'       => $validated['reason'],
+            'status'       => 'pending',
         ]);
 
         return redirect()->route('overtimes.index')->with('success', 'Pengajuan lembur berhasil dikirim!');
@@ -92,12 +120,22 @@ class OvertimeController extends Controller
             abort(403);
         }
 
-        $overtime->update([
-            'status' => 'approved',
+        $request->validate([
+            'total_pay' => 'nullable|numeric|min:0',
+        ]);
+
+        $updateData = [
+            'status'      => 'approved',
             'approved_by' => $request->user()->id,
             'approved_at' => now(),
             'admin_notes' => $request->admin_notes,
-        ]);
+        ];
+
+        if ($request->filled('total_pay')) {
+            $updateData['total_pay'] = $request->total_pay;
+        }
+
+        $overtime->update($updateData);
 
         return back()->with('success', 'Lembur berhasil disetujui!');
     }

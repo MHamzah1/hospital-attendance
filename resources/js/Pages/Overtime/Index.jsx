@@ -8,7 +8,32 @@ export default function OvertimeIndex({ overtimes, filters }) {
     const isAdmin = auth.user.role === 'admin_sdm';
     const [rejectModal, setRejectModal] = useState(null);
     const [adminNotes, setAdminNotes] = useState('');
+    const [approveModal, setApproveModal] = useState(null);
+    const [approvePay, setApprovePay] = useState('');
     const [searchInput, setSearchInput] = useState(filters.search || '');
+
+    const openApproveModal = (ot) => {
+        setApproveModal(ot.id);
+        setApprovePay(Math.abs(ot.total_pay ?? 0));
+    };
+
+    const CATEGORY_LABELS = {
+        jam:       'Jam',
+        malam:     'Malam',
+        shift:     'Shift',
+        on_call:   'On Call',
+        mod:       'MOD',
+        hari_raya: 'Hari Raya',
+    };
+    const CATEGORY_COLORS = {
+        jam:       'bg-blue-50 text-blue-700',
+        malam:     'bg-indigo-50 text-indigo-700',
+        shift:     'bg-purple-50 text-purple-700',
+        on_call:   'bg-amber-50 text-amber-700',
+        mod:       'bg-orange-50 text-orange-700',
+        hari_raya: 'bg-red-50 text-red-700',
+    };
+    const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n ?? 0);
 
     const buildParams = (overrides = {}) => {
         const base = {
@@ -30,10 +55,10 @@ export default function OvertimeIndex({ overtimes, filters }) {
     };
     const statusLabels = { pending: 'Pending', approved: 'Disetujui', rejected: 'Ditolak' };
 
-    const handleApprove = (id) => {
-        if (confirm('Yakin ingin menyetujui pengajuan lembur ini?')) {
-            router.post(`/overtimes/${id}/approve`, {});
-        }
+    const handleApprove = () => {
+        router.post(`/overtimes/${approveModal}/approve`, { total_pay: approvePay }, {
+            onSuccess: () => { setApproveModal(null); setApprovePay(''); },
+        });
     };
 
     const handleReject = (id) => {
@@ -136,6 +161,8 @@ export default function OvertimeIndex({ overtimes, filters }) {
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Waktu</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Total Jam</th>
+                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Kategori</th>
+                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Total Bayar</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Alasan</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
                                 {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Aksi</th>}
@@ -143,7 +170,7 @@ export default function OvertimeIndex({ overtimes, filters }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {overtimes?.data?.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
+                                <tr><td colSpan={9} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
                             ) : (
                                 overtimes?.data?.map((ot) => (
                                     <tr key={ot.id} className="hover:bg-slate-50/50 transition-colors">
@@ -152,7 +179,13 @@ export default function OvertimeIndex({ overtimes, filters }) {
                                             {new Date(ot.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600 font-mono text-xs">{ot.start_time} - {ot.end_time}</td>
-                                        <td className="px-6 py-3.5 text-slate-700 font-semibold">{ot.total_hours} jam</td>
+                                        <td className="px-6 py-3.5 text-slate-700 font-semibold">{Math.abs(ot.total_hours)} jam</td>
+                                        <td className="px-6 py-3.5">
+                                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${CATEGORY_COLORS[ot.category] ?? 'bg-slate-100 text-slate-700'}`}>
+                                                {CATEGORY_LABELS[ot.category] ?? ot.category ?? '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3.5 text-slate-700 font-semibold text-xs">{formatRp(Math.abs(ot.total_pay))}</td>
                                         <td className="px-6 py-3.5 text-slate-600 max-w-[200px] truncate">{ot.reason}</td>
                                         <td className="px-6 py-3.5">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[ot.status]}`}>
@@ -163,7 +196,7 @@ export default function OvertimeIndex({ overtimes, filters }) {
                                             <td className="px-6 py-3.5">
                                                 {ot.status === 'pending' && (
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => handleApprove(ot.id)} className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-200">Setujui</button>
+                                                    <button onClick={() => openApproveModal(ot)} className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-200">Setujui</button>
                                                         <button onClick={() => setRejectModal(ot.id)} className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200">Tolak</button>
                                                     </div>
                                                 )}
@@ -176,6 +209,27 @@ export default function OvertimeIndex({ overtimes, filters }) {
                     </table>
                 </div>
             </div>
+
+            {approveModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <h3 className="font-bold text-slate-800 text-lg mb-1">Setujui Pengajuan Lembur</h3>
+                        <p className="text-sm text-slate-500 mb-4">Periksa & ubah total bayar jika diperlukan sebelum menyetujui.</p>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Total Bayar (Rp)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            value={approvePay}
+                            onChange={e => setApprovePay(e.target.value)}
+                            className="w-full rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500 mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button onClick={() => { setApproveModal(null); setApprovePay(''); }} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200">Batal</button>
+                            <button onClick={handleApprove} className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-white font-semibold text-sm hover:bg-emerald-600">Setujui</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {rejectModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
