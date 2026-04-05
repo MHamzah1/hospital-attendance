@@ -7,6 +7,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OvertimeController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserScheduleController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +55,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payroll/{payroll}/export-pdf', [PayrollController::class, 'exportPdf'])->name('payroll.exportPdf');
     Route::get('/payroll/{payroll}/export-excel', [PayrollController::class, 'exportExcel'])->name('payroll.exportExcel');
     Route::get('/payroll-bulk-export', [PayrollController::class, 'bulkExportExcel'])->name('payroll.bulkExport');
+
+    // Payroll Import
+    Route::get('/payroll-import', [PayrollImportController::class, 'index'])->name('payroll.import');
+    Route::post('/payroll-import/preview', [PayrollImportController::class, 'preview'])->name('payroll.import.preview');
+    Route::post('/payroll-import/process', [PayrollImportController::class, 'import'])->name('payroll.import.process');
+    Route::get('/payroll-import/template', [PayrollImportController::class, 'downloadTemplate'])->name('payroll.import.template');
 
     // Schedule Management (Jadwal Karyawan)
     Route::get('/schedule', [UserScheduleController::class, 'index'])->name('schedule.index');

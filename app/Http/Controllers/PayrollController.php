@@ -21,20 +21,38 @@ class PayrollController extends Controller
         $year  = $request->get('year', Carbon::now()->year);
 
         if ($user->isAdmin()) {
-            $payrolls = Payroll::with('user')
+            $query = Payroll::with('user')
                 ->where('month', $month)
-                ->where('year', $year)
-                ->latest()
-                ->paginate(20);
+                ->where('year', $year);
+
+            // Search filter
+            if ($search = $request->get('search')) {
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('nip', 'like', "%{$search}%")
+                      ->orWhere('employee_id', 'like', "%{$search}%")
+                      ->orWhere('department', 'like', "%{$search}%");
+                });
+            }
+
+            $payrolls = $query->latest()->get();
 
             $employees = User::where('role', 'karyawan')
-                ->where('status', 'active')
+                ->where('status', '!=', 'keluar')
                 ->get();
+
+            // Summary totals (semua data, bukan hanya halaman ini)
+            $summary = [
+                'total_employees' => Payroll::where('month', $month)->where('year', $year)->count(),
+                'total_bruto'     => (int) Payroll::where('month', $month)->where('year', $year)->sum('gross_salary'),
+                'total_netto'     => (int) Payroll::where('month', $month)->where('year', $year)->sum('net_salary'),
+            ];
 
             return Inertia::render('Payroll/Index', [
                 'payrolls'  => $payrolls,
                 'employees' => $employees,
-                'filters'   => ['month' => (int) $month, 'year' => (int) $year],
+                'filters'   => ['month' => (int) $month, 'year' => (int) $year, 'search' => $search ?? ''],
+                'summary'   => $summary,
             ]);
         }
 
@@ -63,7 +81,7 @@ class PayrollController extends Controller
         $year  = $request->year;
 
         $employees = User::where('role', 'karyawan')
-            ->where('status', 'active')
+            ->where('status', '!=', 'keluar')
             ->get();
 
         $totalWorkDays = $this->getWorkingDays($month, $year);
@@ -102,55 +120,78 @@ class PayrollController extends Controller
         $absentDays = $totalWorkDays - $presentDays - $leaveDays;
         if ($absentDays < 0) $absentDays = 0;
 
-        // Data lembur
-        $overtimeHours = OvertimeRequest::where('user_id', $employee->id)
+        // === PENDAPATAN (SELALU dari master karyawan) ===
+        $baseSalary           = $employee->base_salary ?? 0;
+        $positionAllowance    = $employee->position_allowance ?? 0;
+        $functionalAllowance  = $employee->functional_allowance ?? 0;
+        $specialAllowance     = $employee->special_allowance ?? 0;
+        $mealAllowance        = $employee->meal_allowance ?? 0;
+        $transportAllowance   = $employee->transport_allowance ?? 0;
+        $attendanceAllowance  = $employee->attendance_allowance ?? 0;
+
+        // BRUTO = Gaji Pokok + Semua Tunjangan
+        $grossSalary = $baseSalary + $positionAllowance + $functionalAllowance
+                     + $specialAllowance + $mealAllowance + $transportAllowance + $attendanceAllowance;
+
+        // === LEMBUR (dari OvertimeRequest yang approved, per kategori) ===
+        $overtimeRequests = OvertimeRequest::where('user_id', $employee->id)
             ->where('status', 'approved')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
-            ->sum('total_hours');
+            ->get();
 
-        // === PENDAPATAN ===
-        // BUG FIX: Tidak lagi double-query $existing di sini.
-        // $existing sudah diterima sebagai parameter dari generate().
-        // Gunakan base_salary dari payroll existing jika ada, fallback ke master karyawan.
-        $baseSalary       = $existing?->base_salary ?? $employee->base_salary ?? 0;
-        $positionAllowance = $existing?->position_allowance ?? $employee->position_allowance ?? 0;
+        $overtimeHours   = $overtimeRequests->sum('total_hours');
+        $overtimeHourly  = $overtimeRequests->where('category', 'jam')->sum('total_pay');
+        $overtimeNight   = $overtimeRequests->where('category', 'malam')->sum('total_pay');
+        $overtimeShift   = $overtimeRequests->where('category', 'shift')->sum('total_pay');
+        $overtimeOnCall  = $overtimeRequests->where('category', 'on_call')->sum('total_pay');
+        $overtimeMod     = $overtimeRequests->where('category', 'mod')->sum('total_pay');
+        $overtimeHoliday = $overtimeRequests->where('category', 'hari_raya')->sum('total_pay');
 
-        // Tunjangan makan & transport dihitung per hari hadir
-        $mealAllowance     = ($existing?->meal_allowance_daily ?? $employee->meal_allowance ?? 0) * $presentDays;
-        $transportAllowance = ($employee->transport_allowance ?? 0) * $presentDays;
+        $totalOvertimeOther = $overtimeHourly + $overtimeNight + $overtimeShift
+                            + $overtimeOnCall + $overtimeMod + $overtimeHoliday;
 
-        // Lembur: 1/173 × gaji pokok × 1,5 (jam pertama) + 2× (jam berikutnya)
-        $hourlyRate  = $baseSalary > 0 ? $baseSalary / 173 : 0;
-        $overtimePay = 0;
-        if ($overtimeHours > 0) {
-            $firstHour       = min($overtimeHours, 1);
-            $additionalHours = max($overtimeHours - 1, 0);
-            $overtimePay     = ($firstHour * $hourlyRate * 1.5) + ($additionalHours * $hourlyRate * 2);
-        }
+        // Koreksi upah & lain-lain: pertahankan dari existing jika ada (diisi via import)
+        $salaryCorrection = $existing?->salary_correction ?? 0;
+        $otherAllowance   = $existing?->other_allowance ?? 0;
 
-        $grossSalary = $baseSalary + $positionAllowance + $mealAllowance + $transportAllowance + $overtimePay;
+        // TOTAL PENDAPATAN = BRUTO + Lembur + Koreksi Upah(+) + Lain-lain(+)
+        $totalPendapatan = $grossSalary + $totalOvertimeOther + $salaryCorrection + $otherAllowance;
 
         // === POTONGAN ===
+        // BPJS auto-kalkulasi dari gaji pokok
         $bpjsKesehatan      = round($baseSalary * 0.01);
         $bpjsKetenagakerjaan = round($baseSalary * 0.02);
-        $bpjsPensiun        = round($baseSalary * 0.01);
+        $bpjsPensiunJp      = round($baseSalary * 0.01);
 
-        $dailyRate        = $totalWorkDays > 0 ? $baseSalary / $totalWorkDays : 0;
-        $absenceDeduction = round($absentDays * $dailyRate);
-        $lateDeduction    = $lateDays * 25000;
-        $absenceDeduction += $lateDeduction;
+        // Potongan ketidakhadiran dihilangkan sesuai permintaan
+
+        // Potongan admin: pertahankan dari existing (diisi via import)
+        $cdtDeduction                = $existing?->cdt_deduction ?? 0;
+        $alphaDeduction              = $existing?->alpha_deduction ?? 0;
+        $cashbondDeduction           = $existing?->cashbond_deduction ?? 0;
+        $piutangObatDeduction        = $existing?->piutang_obat_deduction ?? 0;
+        $salaryCorrectDeduction      = $existing?->salary_correction_deduction ?? 0;
+        $bankAdminDeduction          = $existing?->bank_admin_deduction ?? 0;
+        $otherDeduction              = $existing?->other_deduction ?? 0;
 
         // PPh 21
-        $annualGross         = $grossSalary * 12;
-        $annualBPJS          = ($bpjsKesehatan + $bpjsKetenagakerjaan + $bpjsPensiun) * 12;
+        $annualGross         = $totalPendapatan * 12;
+        $annualBPJS          = ($bpjsKesehatan + $bpjsKetenagakerjaan + $bpjsPensiunJp) * 12;
         $biayaJabatan        = min($annualGross * 0.05, 6000000);
         $ptkp                = 54000000; // TK/0
         $annualTaxableIncome = $annualGross - $annualBPJS - $biayaJabatan - $ptkp;
         $pph21               = Payroll::calculatePPh21($annualTaxableIncome);
 
-        $totalDeduction = $bpjsKesehatan + $bpjsKetenagakerjaan + $bpjsPensiun + $pph21 + $absenceDeduction;
-        $netSalary      = $grossSalary - $totalDeduction;
+        // Total Potongan
+        $totalDeduction = $bpjsKesehatan + $bpjsKetenagakerjaan + $bpjsPensiunJp
+                        + round($pph21)
+                        + $cdtDeduction + $alphaDeduction + $cashbondDeduction
+                        + $piutangObatDeduction + $salaryCorrectDeduction
+                        + $bankAdminDeduction + $otherDeduction;
+
+        // GAJI DIBAYARKAN
+        $netSalary = $totalPendapatan - $totalDeduction;
 
         $data = [
             'user_id'              => $employee->id,
@@ -163,20 +204,47 @@ class PayrollController extends Controller
             'leave_days'           => $leaveDays,
             'sick_days'            => $sickDays,
             'overtime_hours'       => $overtimeHours,
+
+            // Pendapatan
             'base_salary'          => $baseSalary,
             'position_allowance'   => $positionAllowance,
+            'functional_allowance' => $functionalAllowance,
+            'special_allowance'    => $specialAllowance,
             'meal_allowance'       => $mealAllowance,
             'transport_allowance'  => $transportAllowance,
-            'overtime_pay'         => round($overtimePay),
-            'other_allowance'      => 0,
+            'attendance_allowance' => $attendanceAllowance,
             'gross_salary'         => round($grossSalary),
-            'bpjs_kesehatan'       => $bpjsKesehatan,
-            'bpjs_ketenagakerjaan' => $bpjsKetenagakerjaan,
-            'bpjs_pensiun'         => $bpjsPensiun,
-            'pph21'                => round($pph21),
-            'absence_deduction'    => round($absenceDeduction),
-            'other_deduction'      => 0,
-            'total_deduction'      => round($totalDeduction),
+
+            // Lembur per kategori
+            'overtime_hourly'      => round($overtimeHourly),
+            'overtime_night'       => round($overtimeNight),
+            'overtime_shift'       => round($overtimeShift),
+            'overtime_on_call'     => round($overtimeOnCall),
+            'overtime_mod'         => round($overtimeMod),
+            'overtime_holiday'     => round($overtimeHoliday),
+            'overtime_pay'         => round($totalOvertimeOther),
+            'total_overtime_other' => round($totalOvertimeOther),
+
+            // Tambahan
+            'salary_correction'    => $salaryCorrection,
+            'other_allowance'      => $otherAllowance,
+
+            // Potongan
+            'bpjs_kesehatan'              => $bpjsKesehatan,
+            'bpjs_ketenagakerjaan'        => $bpjsKetenagakerjaan,
+            'bpjs_pensiun'                => $bpjsPensiunJp,
+            'bpjs_pensiun_jp'             => $bpjsPensiunJp,
+            'pph21'                       => round($pph21),
+            'absence_deduction'           => 0,
+            'cdt_deduction'               => $cdtDeduction,
+            'alpha_deduction'             => $alphaDeduction,
+            'cashbond_deduction'          => $cashbondDeduction,
+            'piutang_obat_deduction'      => $piutangObatDeduction,
+            'salary_correction_deduction' => $salaryCorrectDeduction,
+            'bank_admin_deduction'        => $bankAdminDeduction,
+            'other_deduction'             => $otherDeduction,
+            'total_deduction'             => round($totalDeduction),
+
             'net_salary'           => round($netSalary),
             'status'               => 'draft',
         ];
@@ -261,14 +329,15 @@ class PayrollController extends Controller
         $callback = function () use ($payroll, $months) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            $f = fn($n) => number_format($n, 0, ',', '.');
 
             fputcsv($file, ['SLIP GAJI KARYAWAN']);
-            fputcsv($file, ['Rumah Sakit Sehat Sejahtera']);
+            fputcsv($file, ['Rumah Sakit Kartika Husada Setu']);
             fputcsv($file, ['']);
             fputcsv($file, ['Periode',        $months[$payroll->month] . ' ' . $payroll->year]);
+            fputcsv($file, ['NIP',            $payroll->user->nip ?? $payroll->user->employee_id]);
             fputcsv($file, ['Nama Karyawan',  $payroll->user->name]);
-            fputcsv($file, ['ID Karyawan',    $payroll->user->employee_id]);
-            fputcsv($file, ['Departemen',     $payroll->user->department]);
+            fputcsv($file, ['Unit / Dept.',   $payroll->user->department]);
             fputcsv($file, ['Jabatan',        $payroll->user->position]);
             fputcsv($file, ['']);
 
@@ -279,29 +348,50 @@ class PayrollController extends Controller
             fputcsv($file, ['Hari Tidak Hadir',  $payroll->absent_days]);
             fputcsv($file, ['Hari Cuti',         $payroll->leave_days]);
             fputcsv($file, ['Hari Sakit',        $payroll->sick_days]);
-            fputcsv($file, ['Jam Lembur',        $payroll->overtime_hours]);
             fputcsv($file, ['']);
 
             fputcsv($file, ['=== PENDAPATAN ===']);
-            fputcsv($file, ['Gaji Pokok',         number_format($payroll->base_salary, 0, ',', '.')]);
-            fputcsv($file, ['Tunjangan Jabatan',  number_format($payroll->position_allowance, 0, ',', '.')]);
-            fputcsv($file, ['Tunjangan Makan',    number_format($payroll->meal_allowance, 0, ',', '.')]);
-            fputcsv($file, ['Tunjangan Transport', number_format($payroll->transport_allowance, 0, ',', '.')]);
-            fputcsv($file, ['Uang Lembur',        number_format($payroll->overtime_pay, 0, ',', '.')]);
-            fputcsv($file, ['Total Pendapatan',   number_format($payroll->gross_salary, 0, ',', '.')]);
+            fputcsv($file, ['Gaji Pokok',          $f($payroll->base_salary)]);
+            fputcsv($file, ['Tunj. Jabatan',       $f($payroll->position_allowance)]);
+            fputcsv($file, ['Tunj. Fungsional',    $f($payroll->functional_allowance)]);
+            fputcsv($file, ['Tunj. Khusus',        $f($payroll->special_allowance)]);
+            fputcsv($file, ['Tunj. Makan',         $f($payroll->meal_allowance)]);
+            fputcsv($file, ['Tunj. Transport',     $f($payroll->transport_allowance)]);
+            fputcsv($file, ['Tunj. Kehadiran',     $f($payroll->attendance_allowance)]);
+            fputcsv($file, ['BRUTO',               $f($payroll->gross_salary)]);
+            fputcsv($file, ['']);
+            fputcsv($file, ['Lembur Jam',          $f($payroll->overtime_hourly)]);
+            fputcsv($file, ['Lembur Malam',        $f($payroll->overtime_night)]);
+            fputcsv($file, ['Lembur Shift',        $f($payroll->overtime_shift)]);
+            fputcsv($file, ['Lembur On Call',      $f($payroll->overtime_on_call)]);
+            fputcsv($file, ['Lembur MOD',          $f($payroll->overtime_mod)]);
+            fputcsv($file, ['Lembur Hari Raya',    $f($payroll->overtime_holiday)]);
+            fputcsv($file, ['Koreksi Upah (+)',    $f($payroll->salary_correction)]);
+            fputcsv($file, ['Lain-lain (+)',       $f($payroll->other_allowance)]);
+
+            $totalPendapatan = $payroll->gross_salary + $payroll->overtime_hourly + $payroll->overtime_night
+                + $payroll->overtime_shift + $payroll->overtime_on_call + $payroll->overtime_mod
+                + $payroll->overtime_holiday + $payroll->salary_correction + $payroll->other_allowance;
+            fputcsv($file, ['TOTAL PENDAPATAN',    $f($totalPendapatan)]);
             fputcsv($file, ['']);
 
             fputcsv($file, ['=== POTONGAN ===']);
-            fputcsv($file, ['BPJS Kesehatan (1%)',        number_format($payroll->bpjs_kesehatan, 0, ',', '.')]);
-            fputcsv($file, ['BPJS Ketenagakerjaan (2%)',  number_format($payroll->bpjs_ketenagakerjaan, 0, ',', '.')]);
-            fputcsv($file, ['BPJS Pensiun (1%)',          number_format($payroll->bpjs_pensiun, 0, ',', '.')]);
-            fputcsv($file, ['PPh 21',                     number_format($payroll->pph21, 0, ',', '.')]);
-            fputcsv($file, ['Potongan Ketidakhadiran',    number_format($payroll->absence_deduction, 0, ',', '.')]);
-            fputcsv($file, ['Potongan Lainnya',           number_format($payroll->other_deduction, 0, ',', '.')]);
-            fputcsv($file, ['Total Potongan',             number_format($payroll->total_deduction, 0, ',', '.')]);
+            fputcsv($file, ['CDT',                         $f($payroll->cdt_deduction)]);
+            fputcsv($file, ['Alpa',                        $f($payroll->alpha_deduction)]);
+            fputcsv($file, ['Cashbond',                    $f($payroll->cashbond_deduction)]);
+            fputcsv($file, ['Piutang Obat',                $f($payroll->piutang_obat_deduction)]);
+            fputcsv($file, ['Koreksi Upah (-)',            $f($payroll->salary_correction_deduction)]);
+            fputcsv($file, ['Adm. Bank',                   $f($payroll->bank_admin_deduction)]);
+            fputcsv($file, ['PPh 21',                      $f($payroll->pph21)]);
+            fputcsv($file, ['Pot. Ketidakhadiran',         $f($payroll->absence_deduction)]);
+            fputcsv($file, ['Potongan Lainnya',            $f($payroll->other_deduction)]);
+            fputcsv($file, ['BPJS Kesehatan (1%)',         $f($payroll->bpjs_kesehatan)]);
+            fputcsv($file, ['BPJS TK JHT (2%)',           $f($payroll->bpjs_ketenagakerjaan)]);
+            fputcsv($file, ['BPJS TK JP (1%)',            $f($payroll->bpjs_pensiun_jp ?? $payroll->bpjs_pensiun)]);
+            fputcsv($file, ['Total Potongan',              $f($payroll->total_deduction)]);
             fputcsv($file, ['']);
 
-            fputcsv($file, ['GAJI BERSIH (Take Home Pay)', number_format($payroll->net_salary, 0, ',', '.')]);
+            fputcsv($file, ['GAJI DIBAYARKAN (Take Home Pay)', $f($payroll->net_salary)]);
 
             fclose($file);
         };

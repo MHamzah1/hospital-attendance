@@ -3,16 +3,17 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FlashMessage from '@/Components/FlashMessage';
 import { Head, Link, router } from '@inertiajs/react';
 
-export default function PayrollIndex({ payrolls, employees, filters }) {
+export default function PayrollIndex({ payrolls, employees, filters, summary }) {
     const [month, setMonth] = useState(filters.month);
     const [year, setYear] = useState(filters.year);
+    const [search, setSearch] = useState(filters.search || '');
     const [generating, setGenerating] = useState(false);
 
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
 
     const handleFilter = () => {
-        router.get('/payroll', { month, year }, { preserveState: true });
+        router.get('/payroll', { month, year, search: search || undefined }, { preserveState: true });
     };
 
     const handleGenerate = () => {
@@ -48,6 +49,14 @@ export default function PayrollIndex({ payrolls, employees, filters }) {
                     <button onClick={handleFilter} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
                         Filter
                     </button>
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleFilter()}
+                        placeholder="Cari nama / NIP / departemen..."
+                        className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500 w-64"
+                    />
                     <div className="flex-1" />
                     <button onClick={handleGenerate} disabled={generating}
                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30 disabled:opacity-50">
@@ -57,31 +66,34 @@ export default function PayrollIndex({ payrolls, employees, filters }) {
                         className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
                         📊 Export Rekap
                     </a>
+                    <Link href="/payroll-import"
+                        className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+                        📥 Import Potongan
+                    </Link>
                 </div>
             </div>
 
             {/* Info Message */}
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
-                <p className="text-sm text-blue-700">
-                    <strong>ℹ️ Informasi:</strong> Gaji pokok dan tunjangan karyawan sekarang dikelola melalui modul Penggajian (import excel). 
-                    Pastikan input data gaji di file Excel impor dengan benar.
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+                <p className="text-sm text-amber-800">
+                    <strong>⚠️ Wajib import data potongan (Excel) terlebih dahulu</strong>, lalu klik <strong>Generate Payroll</strong> untuk merekap keseluruhan gaji, tunjangan, absensi, lembur, cuti & BPJS secara otomatis.
                 </p>
             </div>
 
             {/* Summary cards */}
-            {payrolls?.data?.length > 0 && (
+            {summary && summary.total_employees > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-5">
                         <p className="text-xs text-slate-500 font-medium uppercase">Total Karyawan</p>
-                        <p className="text-2xl font-extrabold text-slate-800 mt-1">{payrolls.data.length}</p>
+                        <p className="text-2xl font-extrabold text-slate-800 mt-1">{summary.total_employees}</p>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-5">
                         <p className="text-xs text-slate-500 font-medium uppercase">Total Gaji Bruto</p>
-                        <p className="text-2xl font-extrabold text-slate-800 mt-1">Rp {fmt(payrolls.data.reduce((s, p) => s + Number(p.gross_salary), 0))}</p>
+                        <p className="text-2xl font-extrabold text-slate-800 mt-1">Rp {fmt(summary.total_bruto)}</p>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-5">
                         <p className="text-xs text-slate-500 font-medium uppercase">Total Gaji Netto</p>
-                        <p className="text-2xl font-extrabold text-emerald-600 mt-1">Rp {fmt(payrolls.data.reduce((s, p) => s + Number(p.net_salary), 0))}</p>
+                        <p className="text-2xl font-extrabold text-emerald-600 mt-1">Rp {fmt(summary.total_netto)}</p>
                     </div>
                 </div>
             )}
@@ -102,12 +114,12 @@ export default function PayrollIndex({ payrolls, employees, filters }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {payrolls?.data?.length === 0 ? (
+                            {payrolls?.length === 0 ? (
                                 <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                                     Belum ada data penggajian untuk periode ini. Klik "Generate Payroll" untuk membuat.
                                 </td></tr>
                             ) : (
-                                payrolls?.data?.map((p) => (
+                                payrolls?.map((p) => (
                                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-3.5">
                                             <div>

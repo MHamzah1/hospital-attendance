@@ -62,47 +62,47 @@ class PayrollImportController extends Controller
                 // For XLSX/XLS, use toArray() for consistent cell value extraction
                 $spreadsheet = IOFactory::load($file->getPathname());
                 $worksheet = $spreadsheet->getActiveSheet();
-                $sheetData = $worksheet->toArray(null, true, true, true);
+                $sheetData = $worksheet->toArray(null, true, true, false);
 
                 // Detect template format and skip all header rows
                 $headers = [];
                 $dataStartRow = 0;
                 
-                // Look for first row that has actual employee data (NIP column)
                 foreach ($sheetData as $rowIdx => $row) {
                     $firstCell = trim((string)($row[0] ?? ''));
+                    $firstLower = strtolower($firstCell);
                     
-                    // Skip rows that are part of template legend
+                    // Skip empty rows
+                    if (empty($firstCell)) continue;
+                    
+                    // Skip title, section labels, and legend rows
                     if (str_contains($firstCell, 'DATA PENGGAJIAN') ||
+                        str_contains($firstCell, 'IDENTITAS') ||
+                        str_contains($firstCell, 'TAMBAHAN') ||
+                        str_contains($firstCell, 'POTONGAN') ||
+                        str_contains($firstCell, 'PENDAPATAN') ||
                         str_contains($firstCell, 'Kolom BIRU') ||
                         str_contains($firstCell, 'Kolom MERAH') ||
-                        str_contains($firstCell, 'NIP') && str_contains($firstCell, 'NAMA') ||
+                        str_contains($firstCell, 'Kolom HIJAU') ||
                         str_starts_with($firstCell, '*') ||
                         str_starts_with($firstCell, '=') ||
-                        str_starts_with($firstCell, '|') ||
-                        empty($firstCell)) {
-                        
-                        // If this looks like a header row (has column names)
-                        if (str_contains($firstCell, 'NIP') || str_contains($firstCell, 'NAMA') || 
-                            str_contains($firstCell, 'GAJI') || str_contains($firstCell, 'nip') || 
-                            str_contains($firstCell, 'nama') || str_contains($firstCell, 'gaji')) {
-                            $headers = $row;
-                            $dataStartRow = $rowIdx + 1;
-                        }
+                        str_starts_with($firstCell, '|')) {
                         continue;
                     }
                     
-                    // Found first data row (NIP should be numeric or code)
-                    if (!empty($firstCell)) {
-                        if (empty($headers)) {
-                            // No header found yet, use previous row as headers
-                            if ($rowIdx > 0) {
-                                $headers = $sheetData[$rowIdx - 1];
-                            }
-                        }
-                        $dataStartRow = $rowIdx;
-                        break;
+                    // Detect header row (NIP, NAMA, etc.)
+                    if (in_array($firstLower, ['nip', 'no', 'nama', 'employee_id', 'employeeid'])) {
+                        $headers = $row;
+                        $dataStartRow = $rowIdx + 1;
+                        continue;
                     }
+                    
+                    // Found first data row
+                    if (empty($headers) && $rowIdx > 0) {
+                        $headers = $sheetData[$rowIdx - 1];
+                    }
+                    $dataStartRow = $rowIdx;
+                    break;
                 }
                 
                 // Extract data rows starting from dataStartRow
@@ -196,39 +196,40 @@ class PayrollImportController extends Controller
                 // Handle XLSX/XLS using same logic as preview
                 $spreadsheet = IOFactory::load($file->getPathname());
                 $worksheet = $spreadsheet->getActiveSheet();
-                $sheetData = $worksheet->toArray(null, true, true, true);
+                $sheetData = $worksheet->toArray(null, true, true, false);
 
-                // Detect template format and skip all header rows
                 $dataStartRow = 0;
                 
-                // Look for first row that has actual employee data
                 foreach ($sheetData as $rowIdx => $row) {
                     $firstCell = trim((string)($row[0] ?? ''));
+                    $firstLower = strtolower($firstCell);
                     
-                    // Skip rows that are part of template legend
+                    if (empty($firstCell)) continue;
+                    
+                    // Skip title, section labels, and legend rows
                     if (str_contains($firstCell, 'DATA PENGGAJIAN') ||
+                        str_contains($firstCell, 'IDENTITAS') ||
+                        str_contains($firstCell, 'TAMBAHAN') ||
+                        str_contains($firstCell, 'POTONGAN') ||
+                        str_contains($firstCell, 'PENDAPATAN') ||
                         str_contains($firstCell, 'Kolom BIRU') ||
                         str_contains($firstCell, 'Kolom MERAH') ||
-                        str_contains($firstCell, 'NIP') && str_contains($firstCell, 'NAMA') ||
+                        str_contains($firstCell, 'Kolom HIJAU') ||
                         str_starts_with($firstCell, '*') ||
                         str_starts_with($firstCell, '=') ||
-                        str_starts_with($firstCell, '|') ||
-                        empty($firstCell)) {
-                        
-                        // If this looks like a header row, skip it
-                        if (str_contains($firstCell, 'NIP') || str_contains($firstCell, 'NAMA') || 
-                            str_contains($firstCell, 'GAJI') || str_contains($firstCell, 'nip') || 
-                            str_contains($firstCell, 'nama') || str_contains($firstCell, 'gaji')) {
-                            $dataStartRow = $rowIdx + 1;
-                        }
+                        str_starts_with($firstCell, '|')) {
+                        continue;
+                    }
+                    
+                    // Detect header row
+                    if (in_array($firstLower, ['nip', 'no', 'nama', 'employee_id', 'employeeid'])) {
+                        $dataStartRow = $rowIdx + 1;
                         continue;
                     }
                     
                     // Found first data row
-                    if (!empty($firstCell)) {
-                        $dataStartRow = $rowIdx;
-                        break;
-                    }
+                    $dataStartRow = $rowIdx;
+                    break;
                 }
                 
                 // Extract data rows starting from dataStartRow
@@ -363,65 +364,31 @@ class PayrollImportController extends Controller
 
     private function buildPayrollData($row, $mapping, $month, $year)
     {
+        // Import hanya untuk potongan & koreksi admin.
+        // Gaji, tunjangan, lembur, BPJS diambil dari sistem saat Generate.
         $data = [
             'user_id' => null,
             'month' => $month,
             'year' => $year,
-            'total_work_days' => 0,
-            'present_days' => 0,
-            'absent_days' => 0,
-            'late_days' => 0,
-            'leave_days' => 0,
-            'sick_days' => 0,
-            'overtime_hours' => 0,
-            
-            // Tunjangan
-            'base_salary' => 0,
-            'position_allowance' => 0,
-            'functional_allowance' => 0,
-            'special_allowance' => 0,
-            'meal_allowance' => 0,
-            'transport_allowance' => 0,
-            'attendance_allowance' => 0,
-            'other_allowance' => 0,
             'salary_correction' => 0,
-            'total_allowance' => 0,
-            
-            // Bruto
-            'gross_salary' => 0,
-            
-            // Lembur
-            'overtime_hourly' => 0,
-            'overtime_shift' => 0,
-            'overtime_night' => 0, // Lembur Malam
-            'overtime_on_call' => 0,
-            'overtime_mod' => 0,
-            'overtime_holiday' => 0,
-            'overtime_pay' => 0,
-            'total_overtime_other' => 0,
-            
-            // Potongan
-            'bpjs_kesehatan' => 0,
+            'other_allowance' => 0,
             'cdt_deduction' => 0,
             'alpha_deduction' => 0,
             'cashbond_deduction' => 0,
             'piutang_obat_deduction' => 0,
-            'bpjs_ketenagakerjaan' => 0,
-            'bpjs_pensiun' => 0,
-            'bpjs_pensiun_jp' => 0,
-            'pph21' => 0,
             'salary_correction_deduction' => 0,
             'bank_admin_deduction' => 0,
-            'absence_deduction' => 0,
-            'other_deduction' => 0,
-            'total_deduction' => 0,
-            
-            // Net
-            'net_salary' => 0,
+            'pph21' => 0,
             'status' => 'draft',
         ];
 
-        // Map each field from CSV
+        $numericFields = [
+            'salary_correction', 'other_allowance',
+            'cdt_deduction', 'alpha_deduction', 'cashbond_deduction',
+            'piutang_obat_deduction', 'salary_correction_deduction',
+            'bank_admin_deduction', 'pph21',
+        ];
+
         foreach ($mapping as $field => $colIndex) {
             if ($colIndex === null || !isset($row[$colIndex - 1])) {
                 continue;
@@ -429,24 +396,9 @@ class PayrollImportController extends Controller
 
             $value = $row[$colIndex - 1];
 
-            // Handle numeric fields - use improved parsing
-            if (in_array($field, [
-                'base_salary', 'position_allowance', 'functional_allowance', 'special_allowance',
-                'meal_allowance', 'transport_allowance', 'attendance_allowance', 'other_allowance',
-                'salary_correction', 'total_allowance', 'gross_salary',
-                'overtime_hourly', 'overtime_shift', 'overtime_night', 'overtime_on_call', 'overtime_mod', 'overtime_holiday',
-                'overtime_pay', 'total_overtime_other',
-                'bpjs_kesehatan', 'cdt_deduction', 'alpha_deduction', 'cashbond_deduction',
-                'piutang_obat_deduction', 'bpjs_ketenagakerjaan', 'bpjs_pensiun', 'bpjs_pensiun_jp',
-                'pph21', 'salary_correction_deduction', 'bank_admin_deduction', 'other_deduction',
-                'total_deduction', 'net_salary'
-            ])) {
-                // Use improved number parsing
+            if (in_array($field, $numericFields)) {
                 $data[$field] = $this->parseNumeric($value);
-            }
-            // Special handling for employee_id/nip
-            elseif ($field === 'employee_id') {
-                // Search by nip first, then employee_id
+            } elseif ($field === 'employee_id') {
                 $employee = User::where('nip', $value)
                     ->orWhere('employee_id', $value)
                     ->first();
@@ -457,54 +409,8 @@ class PayrollImportController extends Controller
             }
         }
 
-        // Validate required fields
         if (!$data['user_id']) {
             throw new \Exception('Karyawan ID tidak valid atau tidak ditemukan');
-        }
-
-        // Auto-calculate BRUTO = base_salary + semua tunjangan (tanpa salary_correction & other_allowance)
-        if ($data['gross_salary'] == 0 && $data['base_salary'] > 0) {
-            $data['gross_salary'] = $data['base_salary'] + $data['position_allowance'] +
-                                    $data['functional_allowance'] + $data['special_allowance'] +
-                                    $data['meal_allowance'] + $data['transport_allowance'] +
-                                    $data['attendance_allowance'];
-        }
-
-        // Total Lembur (semua kategori termasuk Malam)
-        if ($data['total_overtime_other'] == 0) {
-            $data['total_overtime_other'] = $data['overtime_hourly'] + $data['overtime_night'] +
-                                            $data['overtime_shift'] + $data['overtime_on_call'] +
-                                            $data['overtime_mod'] + $data['overtime_holiday'];
-        }
-
-        // TOTAL PENDAPATAN = BRUTO + Lembur + Koreksi Upah (+) + Lain-lain
-        $totalPendapatan = $data['gross_salary'] + $data['total_overtime_other'] +
-                           $data['salary_correction'] + $data['other_allowance'];
-
-        // Auto-calculate BPJS dari base_salary jika tidak diinput
-        if ($data['bpjs_kesehatan'] == 0 && $data['base_salary'] > 0) {
-            $data['bpjs_kesehatan'] = round($data['base_salary'] * 0.01);
-        }
-        if ($data['bpjs_ketenagakerjaan'] == 0 && $data['base_salary'] > 0) {
-            $data['bpjs_ketenagakerjaan'] = round($data['base_salary'] * 0.02);
-        }
-        if ($data['bpjs_pensiun_jp'] == 0 && $data['base_salary'] > 0) {
-            $data['bpjs_pensiun_jp'] = round($data['base_salary'] * 0.01);
-        }
-
-        // Total Potongan = Potongan Admin + BPJS + PPh21
-        if ($data['total_deduction'] == 0) {
-            $data['total_deduction'] = $data['bpjs_kesehatan'] + $data['bpjs_ketenagakerjaan'] +
-                                       $data['bpjs_pensiun'] + $data['bpjs_pensiun_jp'] +
-                                       $data['pph21'] + $data['cdt_deduction'] +
-                                       $data['alpha_deduction'] + $data['cashbond_deduction'] +
-                                       $data['piutang_obat_deduction'] + $data['salary_correction_deduction'] +
-                                       $data['bank_admin_deduction'] + $data['other_deduction'];
-        }
-
-        // GAJI DIBAYARKAN = TOTAL PENDAPATAN - TOTAL POTONGAN
-        if ($data['net_salary'] == 0) {
-            $data['net_salary'] = $totalPendapatan - $data['total_deduction'];
         }
 
         return $data;
@@ -527,149 +433,122 @@ class PayrollImportController extends Controller
         $sheet->setTitle('DATA PENGGAJIAN');
 
         // ── Styles ──────────────────────────────────────────────────────────
-        $blueHeader = [   // Admin input
-            'font'      => ['bold' => true, 'color' => ['rgb' => '000000']],
-            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '4472C4']],
-            'alignment' => ['horizontal' => 'center', 'vertical' => 'center', 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'FFFFFF']]],
-        ];
-        $redHeader = [    // Auto-calculated / sync ke slip gaji
-            'font'      => ['bold' => true, 'color' => ['rgb' => '000000']],
-            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FF0000']],
-            'alignment' => ['horizontal' => 'center', 'vertical' => 'center', 'wrapText' => true],
-            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'FFFFFF']]],
-        ];
-        $blueCell = [
-            'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'BDD7EE']],
-            'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
-            'alignment' => ['horizontal' => 'right'],
-        ];
-        $redCell = [
-            'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FFB3B3']],
-            'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
-            'alignment' => ['horizontal' => 'right'],
-        ];
-
-        // ── Row 1: LEGEND ───────────────────────────────────────────────────
-        $sheet->mergeCells('A1:AF1');
-        $sheet->setCellValue('A1', 'DATA PENGGAJIAN  |  Kolom BIRU = Input Admin  |  Kolom MERAH = Kalkulasi Otomatis (sync ke slip gaji)');
-        $sheet->getStyle('A1')->applyFromArray([
+        $darkTitle = [
             'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '1F3864']],
             'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
-        ]);
-        $sheet->getRowDimension(1)->setRowHeight(22);
-
-        // ── Row 2: Section Labels ────────────────────────────────────────────
+        ];
         $sectionStyle = [
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '2F5496']],
             'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
         ];
-        $sheet->mergeCells('A2:D2');  $sheet->setCellValue('A2', 'IDENTITAS');
-        $sheet->mergeCells('E2:L2');  $sheet->setCellValue('E2', 'PENDAPATAN (GAJI & TUNJANGAN)');
-        $sheet->mergeCells('M2:T2');  $sheet->setCellValue('M2', 'LEMBUR & TAMBAHAN');
-        $sheet->mergeCells('U2:AF2'); $sheet->setCellValue('U2', 'POTONGAN');
-        foreach (['A2','E2','M2','U2'] as $c) {
+        $blueHeader = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '4472C4']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center', 'wrapText' => true],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'FFFFFF']]],
+        ];
+        $greenHeader = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '548235']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center', 'wrapText' => true],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'FFFFFF']]],
+        ];
+        $redHeader = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => 'C00000']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center', 'wrapText' => true],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'FFFFFF']]],
+        ];
+
+        // ── Row 1: Title ────────────────────────────────────────────────────
+        $sheet->mergeCells('A1:K1');
+        $sheet->setCellValue('A1', 'DATA PENGGAJIAN — Isi kolom HIJAU (Tambahan) & MERAH (Potongan). Gaji, tunjangan, lembur & BPJS otomatis dari sistem.');
+        $sheet->getStyle('A1')->applyFromArray($darkTitle);
+        $sheet->getRowDimension(1)->setRowHeight(25);
+
+        // ── Row 2: Section Labels ───────────────────────────────────────────
+        $sheet->mergeCells('A2:B2');
+        $sheet->setCellValue('A2', 'IDENTITAS (OTOMATIS)');
+        $sheet->mergeCells('C2:D2');
+        $sheet->setCellValue('C2', 'TAMBAHAN (+)');
+        $sheet->mergeCells('E2:K2');
+        $sheet->setCellValue('E2', 'POTONGAN ADMIN (-)');
+        foreach (['A2', 'C2', 'E2'] as $c) {
             $sheet->getStyle($c)->applyFromArray($sectionStyle);
         }
-        $sheet->getRowDimension(2)->setRowHeight(18);
+        $sheet->getRowDimension(2)->setRowHeight(20);
 
-        // ── Row 3: Column Headers ────────────────────────────────────────────
-        // A-D: Identitas, E-K: Gaji & Tunjangan, L: BRUTO
-        // M-Q: Lembur, R-S: Tambahan, T: TOTAL PENDAPATAN
-        // U-AA: Potongan Admin, AB-AD: BPJS, AE: TOTAL POTONGAN, AF: GAJI DIBAYARKAN
+        // ── Row 3: Column Headers ───────────────────────────────────────────
         $headers = [
-            'A'  => ['NIP',                              'blue'],
-            'B'  => ['NAMA',                             'blue'],
-            'C'  => ['JABATAN',                          'blue'],
-            'D'  => ['UNIT',                             'blue'],
-            'E'  => ['GAJI POKOK',                       'blue'],
-            'F'  => ['TUNJ. JABATAN',                    'blue'],
-            'G'  => ['TUNJ. FUNGSIONAL',                 'blue'],
-            'H'  => ['TUNJ. KHUSUS',                     'blue'],
-            'I'  => ['TUNJ. MAKAN',                      'blue'],
-            'J'  => ['TUNJ. TRANSPORT',                  'blue'],
-            'K'  => ['TUNJ. KEHADIRAN',                  'blue'],
-            'L'  => ['BRUTO',                            'red'],
-            'M'  => ['LEMBUR JAM (@10.000/jam)',         'blue'],
-            'N'  => ['LEMBUR MALAM (@20.000/shift)',     'blue'],
-            'O'  => ['LEMBUR SHIFT (@80.000/shift)',     'blue'],
-            'P'  => ['LEMBUR ON CALL (@50.000/shift)',   'blue'],
-            'Q'  => ['LEMBUR HARI RAYA (@120.000/shift)','blue'],
-            'R'  => ['KOREKSI UPAH (+)',                 'blue'],
-            'S'  => ['LAIN-LAIN (+)',                    'blue'],
-            'T'  => ['TOTAL PENDAPATAN',                 'red'],
-            'U'  => ['CDT',                              'blue'],
-            'V'  => ['ALPA',                             'blue'],
-            'W'  => ['CASHBOND',                         'blue'],
-            'X'  => ['PIUTANG OBAT',                     'blue'],
-            'Y'  => ['KOREKSI UPAH (-)',                 'blue'],
-            'Z'  => ['ADM. BANK',                        'blue'],
-            'AA' => ['PPH 21',                           'blue'],
-            'AB' => ['BPJS KESEHATAN (1%)',              'red'],
-            'AC' => ['BPJS TK JHT (2%)',                 'red'],
-            'AD' => ['BPJS TK JP (1%)',                  'red'],
-            'AE' => ['TOTAL POTONGAN',                   'red'],
-            'AF' => ['GAJI DIBAYARKAN',                  'red'],
+            'A'  => ['NIP',               'blue'],
+            'B'  => ['NAMA',              'blue'],
+            'C'  => ['KOREKSI UPAH (+)',  'green'],
+            'D'  => ['LAIN-LAIN (+)',     'green'],
+            'E'  => ['CDT',              'red'],
+            'F'  => ['ALPA',             'red'],
+            'G'  => ['CASHBOND',         'red'],
+            'H'  => ['PIUTANG OBAT',     'red'],
+            'I'  => ['KOREKSI UPAH (-)', 'red'],
+            'J'  => ['ADM. BANK',        'red'],
+            'K'  => ['PPH 21',           'red'],
         ];
 
         foreach ($headers as $col => [$label, $color]) {
-            $cell = $col . '3';
-            $sheet->setCellValue($cell, $label);
-            $sheet->getStyle($cell)->applyFromArray($color === 'blue' ? $blueHeader : $redHeader);
+            $sheet->setCellValue("{$col}3", $label);
+            $style = $color === 'blue' ? $blueHeader : ($color === 'green' ? $greenHeader : $redHeader);
+            $sheet->getStyle("{$col}3")->applyFromArray($style);
         }
-        $sheet->getRowDimension(3)->setRowHeight(42);
+        $sheet->getRowDimension(3)->setRowHeight(38);
 
-        // ── Row 4-103: Pre-fill formulas + styling for 100 rows ──────────
-        $blueCellLeft = array_merge($blueCell, ['alignment' => ['horizontal' => 'left']]);
-        $blueTextCols = ['A','B','C','D'];
-        $blueNumCols  = ['E','F','G','H','I','J','K','M','N','O','P','Q','R','S','U','V','W','X','Y','Z','AA'];
-        $redFormulaCols = ['L','T','AB','AC','AD','AE','AF'];
+        // ── Pre-fill employees ──────────────────────────────────────────────
+        $employees = User::where('role', 'karyawan')
+            ->where('status', '!=', 'keluar')
+            ->orderBy('department')
+            ->orderBy('name')
+            ->get();
+
         $numFmt = '#,##0';
+        $row = 4;
+        foreach ($employees as $emp) {
+            $sheet->setCellValueExplicit("A{$row}", $emp->nip ?? $emp->employee_id, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue("B{$row}", $emp->name);
 
-        for ($r = 4; $r <= 103; $r++) {
-            // Blue text columns (identitas) - left aligned
-            foreach ($blueTextCols as $col) {
-                $sheet->getStyle("{$col}{$r}")->applyFromArray($blueCellLeft);
+            // Identity columns (read-only style)
+            $sheet->getStyle("A{$row}:B{$row}")->applyFromArray([
+                'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'D6DCE4']],
+                'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
+            ]);
+
+            // Tambahan columns (green) C-D
+            foreach (range('C', 'D') as $c) {
+                $sheet->getStyle("{$c}{$row}")->applyFromArray([
+                    'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'E2EFDA']],
+                    'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
+                    'alignment' => ['horizontal' => 'right'],
+                ]);
+                $sheet->getStyle("{$c}{$row}")->getNumberFormat()->setFormatCode($numFmt);
             }
-
-            // Blue numeric columns - right aligned + number format
-            foreach ($blueNumCols as $col) {
-                $sheet->getStyle("{$col}{$r}")->applyFromArray($blueCell);
-                $sheet->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode($numFmt);
+            // Potongan columns (red) E-K
+            foreach (range('E', 'K') as $c) {
+                $sheet->getStyle("{$c}{$row}")->applyFromArray([
+                    'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FCE4EC']],
+                    'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
+                    'alignment' => ['horizontal' => 'right'],
+                ]);
+                $sheet->getStyle("{$c}{$row}")->getNumberFormat()->setFormatCode($numFmt);
             }
-
-            // Red formula columns
-            $sheet->setCellValue("L{$r}", "=E{$r}+F{$r}+G{$r}+H{$r}+I{$r}+J{$r}+K{$r}");
-            $sheet->setCellValue("T{$r}", "=L{$r}+M{$r}+N{$r}+O{$r}+P{$r}+Q{$r}+R{$r}+S{$r}");
-            $sheet->setCellValue("AB{$r}", "=ROUND(E{$r}*0.01,0)");
-            $sheet->setCellValue("AC{$r}", "=ROUND(E{$r}*0.02,0)");
-            $sheet->setCellValue("AD{$r}", "=ROUND(E{$r}*0.01,0)");
-            $sheet->setCellValue("AE{$r}", "=U{$r}+V{$r}+W{$r}+X{$r}+Y{$r}+Z{$r}+AA{$r}+AB{$r}+AC{$r}+AD{$r}");
-            $sheet->setCellValue("AF{$r}", "=T{$r}-AE{$r}");
-
-            foreach ($redFormulaCols as $col) {
-                $sheet->getStyle("{$col}{$r}")->applyFromArray($redCell);
-                $sheet->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode($numFmt);
-            }
+            $row++;
         }
 
-        // ── Column Widths ────────────────────────────────────────────────────
-        $widths = [
-            'A'=>14, 'B'=>22, 'C'=>18, 'D'=>16,
-            'E'=>14, 'F'=>14, 'G'=>14, 'H'=>14, 'I'=>13, 'J'=>13, 'K'=>13,
-            'L'=>14, 'M'=>16, 'N'=>16, 'O'=>16, 'P'=>16, 'Q'=>18,
-            'R'=>14, 'S'=>13, 'T'=>16,
-            'U'=>12, 'V'=>12, 'W'=>12, 'X'=>13, 'Y'=>14, 'Z'=>12, 'AA'=>12,
-            'AB'=>16, 'AC'=>14, 'AD'=>14, 'AE'=>15, 'AF'=>16,
-        ];
+        // ── Column Widths ───────────────────────────────────────────────────
+        $widths = ['A' => 16, 'B' => 30, 'C' => 17, 'D' => 15, 'E' => 12, 'F' => 12, 'G' => 14, 'H' => 15, 'I' => 17, 'J' => 14, 'K' => 13];
         foreach ($widths as $col => $width) {
             $sheet->getColumnDimension($col)->setWidth($width);
         }
 
-        // ── Freeze pane: fix identitas + header rows ────────────────────────
-        $sheet->freezePane('E4');
+        $sheet->freezePane('C4');
 
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $tempFile = tempnam(sys_get_temp_dir(), 'data_penggajian_');

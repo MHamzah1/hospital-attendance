@@ -26,43 +26,21 @@ export default function PayrollImport({ flash }) {
         return value;
     };
 
+    // Hanya field potongan & koreksi admin. Gaji, tunjangan, lembur, BPJS otomatis dari sistem saat Generate.
     const payrollFields = [
-        // Identitas
-        { key: 'employee_id',               label: 'NIP / Employee ID',      aliases: ['nip', 'employeeid', 'id', 'no'] },
-        { key: '_nama',                     label: 'Nama (info)',            aliases: ['nama', 'name', 'namakaryawan'] },
-        { key: '_jabatan',                  label: 'Jabatan (info)',         aliases: ['jabatan', 'position', 'posisi'] },
-        { key: '_unit',                     label: 'Unit (info)',            aliases: ['unit', 'departemen', 'department', 'dept'] },
-        // Gaji & Tunjangan
-        { key: 'base_salary',               label: 'Gaji Pokok',             aliases: ['gajipokok', 'gaji_pokok', 'gajidasar', 'basesalary'] },
-        { key: 'position_allowance',        label: 'Tunj. Jabatan',          aliases: ['tunjanganjabatan', 'tunj_jabatan', 'tjjabatan'] },
-        { key: 'functional_allowance',      label: 'Tunj. Fungsional',       aliases: ['tunjanganfungsional', 'tunj_fungsional', 'tjfungsional'] },
-        { key: 'special_allowance',         label: 'Tunj. Khusus',           aliases: ['tunjangankhusus', 'tunj_khusus', 'tjkhusus'] },
-        { key: 'meal_allowance',            label: 'Tunj. Makan',            aliases: ['tunjanganmakan', 'tunj_makan', 'tjmakan'] },
-        { key: 'transport_allowance',       label: 'Tunj. Transport',        aliases: ['tunjangantransport', 'tunj_transport', 'tjtransport'] },
-        { key: 'attendance_allowance',      label: 'Tunj. Kehadiran',        aliases: ['tunjangankehadiran', 'tunj_kehadiran', 'tjkehadiran'] },
-        { key: 'gross_salary',              label: 'BRUTO',                  aliases: ['bruto', 'gajibruto', 'gajikotor'] },
-        // Lembur
-        { key: 'overtime_hourly',           label: 'Lembur Jam',             aliases: ['lemburjam', 'lembur_jam'] },
-        { key: 'overtime_night',            label: 'Lembur Malam',           aliases: ['lemburmalam', 'lembur_malam'] },
-        { key: 'overtime_shift',            label: 'Lembur Shift',           aliases: ['lemburshift', 'lembur_shift'] },
-        { key: 'overtime_on_call',          label: 'Lembur On Call',         aliases: ['lemburoncall', 'lembur_on_call', 'oncall'] },
-        { key: 'overtime_holiday',          label: 'Lembur Hari Raya',       aliases: ['lemburhariraya', 'lembur_hari_raya', 'lemburlibur'] },
-        { key: 'salary_correction',         label: 'Koreksi Upah (+)',       aliases: ['koreksiupahplus', 'koreksiupah'] },
-        { key: 'other_allowance',           label: 'Lain-lain (+)',          aliases: ['lainlainplus', 'lainlain', 'lain_lain', 'other'] },
-        // Potongan Admin
-        { key: 'cdt_deduction',             label: 'CDT',                    aliases: ['cdt', 'potongancdt'] },
-        { key: 'alpha_deduction',           label: 'Alpa',                   aliases: ['alpa', 'alpha', 'potonganalpa'] },
-        { key: 'cashbond_deduction',        label: 'Cashbond',               aliases: ['cashbond', 'potongancashbond'] },
-        { key: 'piutang_obat_deduction',    label: 'Piutang Obat',           aliases: ['piutangobat', 'potonganobat'] },
-        { key: 'salary_correction_deduction', label: 'Koreksi Upah (-)',     aliases: ['koreksiupahmin', 'potongankoreksi', 'koreksi_upah_min'] },
-        { key: 'bank_admin_deduction',      label: 'Adm. Bank',              aliases: ['admbank', 'adm_bank', 'adminbank'] },
-        { key: 'pph21',                     label: 'PPh 21',                 aliases: ['pph21', 'pph', 'pajak'] },
-        // Potongan Kalkulasi (opsional, auto-hitung jika kosong)
-        { key: 'bpjs_kesehatan',            label: 'BPJS Kesehatan (1%)',    aliases: ['bpjskesehatan', 'bpjs_kesehatan', 'bpjskes'] },
-        { key: 'bpjs_ketenagakerjaan',      label: 'BPJS TK JHT (2%)',       aliases: ['bpjstkjht', 'bpjs_jht', 'jht'] },
-        { key: 'bpjs_pensiun_jp',           label: 'BPJS TK JP (1%)',        aliases: ['bpjstkjp', 'bpjs_jp', 'jp'] },
-        { key: 'total_deduction',           label: 'Total Potongan',         aliases: ['totalpotongan', 'total_potongan'] },
-        { key: 'net_salary',               label: 'Gaji Dibayarkan',         aliases: ['gajidibayarkan', 'gaji_dibayarkan', 'netsalary', 'thp'] },
+        { key: 'employee_id',                 label: 'NIP / Employee ID',  aliases: ['nip', 'employeeid', 'id', 'no'] },
+        { key: '_nama',                       label: 'Nama (info)',        aliases: ['nama', 'name', 'namakaryawan'] },
+        // Tambahan (+)
+        { key: 'salary_correction',           label: 'Koreksi Upah (+)',   aliases: ['koreksiupahplus', 'koreksiupah'] },
+        { key: 'other_allowance',             label: 'Lain-lain (+)',      aliases: ['lainlainplus', 'lainlain', 'lain_lain', 'other'] },
+        // Potongan Admin (-)
+        { key: 'cdt_deduction',               label: 'CDT',               aliases: ['cdt', 'potongancdt'] },
+        { key: 'alpha_deduction',             label: 'Alpa',              aliases: ['alpa', 'alpha', 'potonganalpa'] },
+        { key: 'cashbond_deduction',          label: 'Cashbond',          aliases: ['cashbond', 'potongancashbond'] },
+        { key: 'piutang_obat_deduction',      label: 'Piutang Obat',     aliases: ['piutangobat', 'potonganobat'] },
+        { key: 'salary_correction_deduction', label: 'Koreksi Upah (-)', aliases: ['koreksiupahmin', 'potongankoreksi', 'koreksi_upah_min'] },
+        { key: 'bank_admin_deduction',        label: 'Adm. Bank',        aliases: ['admbank', 'adm_bank', 'adminbank'] },
+        { key: 'pph21',                       label: 'PPh 21',           aliases: ['pph21', 'pph', 'pajak'] },
     ];
 
     const handleFileSelect = async (e) => {
@@ -205,8 +183,18 @@ export default function PayrollImport({ flash }) {
                 {step === 1 && (
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-8 space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Import Data Penggajian</h2>
-                            <p className="text-slate-600">Upload file <strong>DATA PENGGAJIAN.xlsx</strong> untuk import data penggajian karyawan</p>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Import Data Potongan</h2>
+                            <p className="text-slate-600">Upload file <strong>DATA PENGGAJIAN.xlsx</strong> untuk import data potongan & koreksi karyawan</p>
+                        </div>
+
+                        {/* Info Note */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 space-y-1">
+                            <p className="font-semibold">Alur Penggajian:</p>
+                            <ol className="list-decimal list-inside space-y-0.5">
+                                <li><strong>Import</strong> data potongan admin (CDT, Alpa, Cashbond, dll) dari Excel</li>
+                                <li><strong>Generate</strong> payroll — sistem otomatis rekap gaji, tunjangan, lembur, absensi, cuti & BPJS</li>
+                                <li><strong>Review</strong> & cetak slip gaji</li>
+                            </ol>
                         </div>
 
                         {/* Periode Selection */}
