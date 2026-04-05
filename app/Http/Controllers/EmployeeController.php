@@ -39,10 +39,15 @@ class EmployeeController extends Controller
             ->distinct()
             ->pluck('department');
 
+        $activeCount   = User::where('role', 'karyawan')->where('status', 'active')->count();
+        $inactiveCount = User::where('role', 'karyawan')->where('status', '!=', 'active')->count();
+
         return Inertia::render('Employee/Index', [
-            'employees'   => $employees,
-            'departments' => $departments,
-            'filters'     => ['search' => $search, 'department' => $department],
+            'employees'     => $employees,
+            'departments'   => $departments,
+            'filters'       => ['search' => $search, 'department' => $department],
+            'activeCount'   => $activeCount,
+            'inactiveCount' => $inactiveCount,
         ]);
     }
 

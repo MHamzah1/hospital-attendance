@@ -474,38 +474,6 @@ export default function ScheduleIndex() {
                                 />
                             </div>
 
-                            {/* View Current Schedules - For Copy/Paste */}
-                            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <label className="block text-sm font-medium text-purple-900">
-                                        📊 Lihat Jadwal Saat Ini (Untuk Copy/Paste)
-                                    </label>
-                                    <button
-                                        onClick={() => setShowCurrentSchedules(!showCurrentSchedules)}
-                                        className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
-                                    >
-                                        {showCurrentSchedules ? 'Tutup' : 'Buka'}
-                                    </button>
-                                </div>
-                                
-                                {showCurrentSchedules && (
-                                    <div className="mt-3">
-                                        <div className="bg-white p-3 rounded border border-purple-200 mb-3 font-mono text-xs max-h-48 overflow-y-auto whitespace-pre-wrap break-all">
-                                            {generateCurrentSchedulesText() || 'Belum ada jadwal'}
-                                        </div>
-                                        <button
-                                            onClick={handleCopySchedules}
-                                            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium"
-                                        >
-                                            📋 Copy Semua Jadwal
-                                        </button>
-                                        {copyMessage && (
-                                            <p className="text-sm text-purple-700 mt-2">{copyMessage}</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
                             {/* Bulk Paste Area */}
                             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <label className="block text-sm font-medium text-blue-900 mb-2">
