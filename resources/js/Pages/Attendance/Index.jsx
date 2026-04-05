@@ -301,7 +301,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                                 {/* Late duration */}
                                 {att.status === 'late' && (
                                     <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                                        <p className="text-xs font-semibold text-red-700">
+                                        <p className="text-xs font-semibold text-red-700 whitespace-nowrap">
                                             {att.late_duration || 'Jadwal tidak ditemukan'}
                                         </p>
                                     </div>
@@ -378,7 +378,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                                                 {att.status === 'late' && (
                                                     <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
                                                         {att.late_duration ? (
-                                                            <p className="text-xs font-semibold text-red-700">{att.late_duration}</p>
+                                                            <p className="text-xs font-semibold text-red-700 whitespace-nowrap">{att.late_duration}</p>
                                                         ) : (
                                                             <p className="text-xs text-red-600">Jadwal tidak ditemukan untuk hari ini</p>
                                                         )}

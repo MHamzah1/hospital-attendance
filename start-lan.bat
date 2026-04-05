@@ -1,17 +1,21 @@
 @echo off
 echo =====================================
 echo LAN Access - Hospital Attendance
+echo Multi-Segment Network Support
 echo =====================================
 echo.
-echo IP Komputer ini: 100.114.24.44
+echo Server dapat diakses dari segmen mana pun via:
+echo   http://192.168.100.50  (Ethernet - KANTOR, aktif sekarang)
+echo   http://30.30.30.123    (Ethernet - LAN LAIN)
+echo   http://30.30.30.63     (Wi-Fi)
 echo.
-echo Buka dari device lain: http://100.114.24.44:8080
-echo Dari HP, sistem otomatis tampil versi mobile.
+echo Pastikan firewall sudah dikonfigurasi:
+echo   Jalankan setup-firewall-multisegment.ps1 sebagai Administrator
 echo.
 echo Menjalankan Vite Dev Server untuk aset...
 echo.
 start "Vite Dev Server" npm run dev
 echo.
-echo Pastikan XAMPP Apache sudah berjalan (port 8080).
-echo Lalu buka http://100.114.24.44:8080 dari device lain.
+echo Pastikan XAMPP Apache sudah berjalan (port 80).
+echo Lalu buka http://30.30.30.123 dari device di segmen lain.
 pause
