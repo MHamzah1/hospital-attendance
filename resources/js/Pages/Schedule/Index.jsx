@@ -634,14 +634,50 @@ export default function ScheduleIndex() {
 
                             {/* Legend */}
                             <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-700">
-                                <p className="font-semibold mb-2">📚 Keterangan:</p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>🟨 <span className="font-semibold">Kuning:</span> Data diubah, belum disimpan</div>
-                                    <div>🟠 <span className="font-semibold">Orange:</span> Weekend</div>
-                                    <div><span className="font-semibold">P:</span> Shift Pagi (07:00-14:00)</div>
-                                    <div><span className="font-semibold">S:</span> Shift Siang (14:00-21:00)</div>
-                                    <div><span className="font-semibold">M:</span> Shift Malam (21:00-07:00)</div>
-                                    <div><span className="font-semibold">-:</span> Tidak dijadwalkan</div>
+                                <p className="font-semibold mb-3">KETERANGAN:</p>
+                                <div className="grid grid-cols-5 gap-3">
+                                    {/* Pagi */}
+                                    <div>
+                                        <p className="font-bold text-blue-700 border-b border-blue-200 pb-1 mb-2">Pagi</p>
+                                        <div className="space-y-1">
+                                            <div><span className="font-semibold">Pagi 1</span><br/><span className="text-gray-500">06:00–13:00</span></div>
+                                            <div><span className="font-semibold">Pagi 2</span><br/><span className="text-gray-500">07:00–14:00</span></div>
+                                            <div><span className="font-semibold">Pagi 3</span><br/><span className="text-gray-500">08:00–16:00</span></div>
+                                        </div>
+                                    </div>
+                                    {/* Middle */}
+                                    <div>
+                                        <p className="font-bold text-purple-700 border-b border-purple-200 pb-1 mb-2">Middle</p>
+                                        <div className="space-y-1">
+                                            <div><span className="font-semibold">Middle 1</span><br/><span className="text-gray-500">09:00–16:00</span></div>
+                                            <div><span className="font-semibold">Middle 2</span><br/><span className="text-gray-500">10:00–17:00</span></div>
+                                            <div><span className="font-semibold">Middle 3</span><br/><span className="text-gray-500">11:00–18:00</span></div>
+                                            <div><span className="font-semibold">Middle 4</span><br/><span className="text-gray-500">12:00–19:00</span></div>
+                                        </div>
+                                    </div>
+                                    {/* Siang */}
+                                    <div>
+                                        <p className="font-bold text-yellow-700 border-b border-yellow-200 pb-1 mb-2">Siang</p>
+                                        <div className="space-y-1">
+                                            <div><span className="font-semibold">Siang 1</span><br/><span className="text-gray-500">13:00–20:00</span></div>
+                                            <div><span className="font-semibold">Siang 2</span><br/><span className="text-gray-500">14:00–21:00</span></div>
+                                        </div>
+                                    </div>
+                                    {/* Malam */}
+                                    <div>
+                                        <p className="font-bold text-indigo-700 border-b border-indigo-200 pb-1 mb-2">Malam</p>
+                                        <div className="space-y-1">
+                                            <div><span className="font-semibold">Malam 1</span><br/><span className="text-gray-500">20:00–06:00</span></div>
+                                            <div><span className="font-semibold">Malam 2</span><br/><span className="text-gray-500">21:00–07:00</span></div>
+                                        </div>
+                                    </div>
+                                    {/* Libur */}
+                                    <div>
+                                        <p className="font-bold text-red-600 border-b border-red-200 pb-1 mb-2">Libur</p>
+                                        <div className="space-y-1">
+                                            <div><span className="font-semibold">Libur</span><br/><span className="text-gray-500">Tidak dijadwalkan</span></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
