@@ -1,0 +1,6 @@
+sekarang saya mau import penggajian, saya punya template data penggajian bernama "DATA PENGGAJIAN.xlsx"
+tugas anda sekarang berikan saya akses import data penggajian massal untuk seluruh karyawan, lalu sistemnya langsung membaca berdasarkan kolom "NIP/Nama" agar tidak salah jumlah.
+lalu penggajian itu langsung ditambahkan dengan Gaji Pokok dan Semua Tunjangan, lalu akan menghasilkan "BRUTO".
+Bruto nanti belum ditambahkan dengan semua Tambahan pendapatan yang ada dari excel & lembur yang sudah di approve.
+Potongan nanti ditambahkan dengan BPJS Kesehatan (1%), BPJS TK - JHT (2%), BPJS TK - JP (1%).
+semuanya nanti langsung sinkron pada menu penggajian & langsung sinkron ke slip gaji. buatkn slip gaji seperti gambar ke-2 yang saya kirim
