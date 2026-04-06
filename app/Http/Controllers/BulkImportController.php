@@ -215,6 +215,7 @@ class BulkImportController extends Controller
             'transport_allowance' => 0,
             'attendance_allowance' => 0,
             'status' => 'active',
+            'jatah_cuti' => 12,
         ];
 
         foreach ($mapping as $field => $colIndex) {
@@ -249,7 +250,7 @@ class BulkImportController extends Controller
             }
 
             // Handle salary/allowance fields - convert to numeric
-            if (in_array($field, ['base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance']) && $value) {
+            if (in_array($field, ['base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance', 'jatah_cuti']) && $value) {
                 // Remove non-numeric characters except decimal point
                 $value = (float) preg_replace('/[^\d.]/', '', $value);
                 $value = max(0, $value); // Ensure non-negative

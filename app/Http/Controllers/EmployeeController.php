@@ -22,9 +22,8 @@ class EmployeeController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('nip', 'like', "%{$search}%")           // BUG FIX: tambah NIP
-                  ->orWhere('employee_id', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                  ->orWhere('nip', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%");
             });
         }
 
@@ -62,7 +61,6 @@ class EmployeeController extends Controller
             // Informasi Dasar
             'nip'                     => 'required|string|unique:users',
             'name'                    => 'required|string|max:255',
-            'email'                   => 'required|string|email|max:255|unique:users',
             'password'                => ['required', Rules\Password::defaults()],
             'gender'                  => 'nullable|string|in:L,P',
             'education'               => 'nullable|string',
@@ -77,6 +75,7 @@ class EmployeeController extends Controller
             'position'                => 'required|string',
             'join_date'               => 'required|date',
             'status'                  => 'nullable|in:active,inactive',
+            'jatah_cuti'              => 'nullable|integer|min:0',
             
             // Komponen Gaji
             'base_salary'             => 'required|numeric|min:0',
@@ -98,6 +97,7 @@ class EmployeeController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['role']     = 'karyawan';
         $validated['status']   = $validated['status'] ?? 'active';
+        $validated['jatah_cuti'] = $validated['jatah_cuti'] ?? 12;
 
         User::create($validated);
 
@@ -117,7 +117,6 @@ class EmployeeController extends Controller
             // Informasi Dasar
             'nip'                  => 'required|string|unique:users,nip,' . $employee->id,
             'name'                 => 'required|string|max:255',
-            'email'                => 'required|string|email|max:255|unique:users,email,' . $employee->id,
             'password'             => 'nullable|' . Rules\Password::defaults(),
             'gender'               => 'nullable|string|in:L,P',
             'education'            => 'nullable|string',
@@ -132,6 +131,7 @@ class EmployeeController extends Controller
             'position'             => 'required|string',
             'join_date'            => 'required|date',
             'status'               => 'required|in:active,inactive',
+            'jatah_cuti'           => 'nullable|integer|min:0',
             
             // Komponen Gaji
             'base_salary'          => 'required|numeric|min:0',

@@ -78,6 +78,32 @@ class LeaveController extends Controller
         // Hitung semua hari kalender (termasuk sabtu, minggu, tanggal merah)
         $totalDays = $startDate->diffInDays($endDate) + 1;
 
+        // Cek sisa jatah cuti jika tipe cuti_tahunan
+        if ($validated['type'] === 'cuti_tahunan') {
+            $user = $request->user();
+            $jatahCuti = $user->jatah_cuti ?? 12;
+
+            // Hitung cuti tahunan yang sudah dipakai tahun ini (approved)
+            $usedLeave = LeaveRequest::where('user_id', $user->id)
+                ->where('type', 'cuti_tahunan')
+                ->where('status', 'approved')
+                ->whereYear('start_date', $startDate->year)
+                ->sum('total_days');
+
+            // Juga hitung yang masih pending
+            $pendingLeave = LeaveRequest::where('user_id', $user->id)
+                ->where('type', 'cuti_tahunan')
+                ->where('status', 'pending')
+                ->whereYear('start_date', $startDate->year)
+                ->sum('total_days');
+
+            $sisaCuti = $jatahCuti - $usedLeave - $pendingLeave;
+
+            if ($totalDays > $sisaCuti) {
+                return back()->withErrors(['end_date' => "Sisa jatah cuti tahunan Anda hanya {$sisaCuti} hari (dari {$jatahCuti} hari). Tidak cukup untuk {$totalDays} hari."]);
+            }
+        }
+
         LeaveRequest::create([
             'user_id' => $request->user()->id,
             'type' => $validated['type'],

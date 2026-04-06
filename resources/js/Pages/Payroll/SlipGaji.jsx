@@ -1,17 +1,35 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
-export default function SlipGaji({ payroll }) {
+export default function SlipGaji({ payroll, cutiInfo }) {
     const months = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     const fmt = (n) => new Intl.NumberFormat('id-ID').format(n || 0);
     const p = payroll;
     const u = payroll.user;
+    const ci = cutiInfo || { jatah_cuti: 12, cuti_terpakai: 0, sisa_cuti: 12 };
 
     const totalOvertimeOther = Number(p.overtime_hourly || 0) + Number(p.overtime_night || 0)
         + Number(p.overtime_shift || 0) + Number(p.overtime_on_call || 0)
         + Number(p.overtime_mod || 0) + Number(p.overtime_holiday || 0);
     const totalPendapatan = Number(p.gross_salary || 0) + totalOvertimeOther
         + Number(p.salary_correction || 0) + Number(p.other_allowance || 0);
+
+    // Format decimal hours to "X jam Y menit Z detik"
+    const fmtHours = (hours) => {
+        const totalSec = Math.abs(Math.round((hours || 0) * 3600));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        return `${h} jam ${m} menit ${s} detik`;
+    };
+    // Format minutes to "X jam Y menit Z detik"
+    const fmtMinutes = (minutes) => {
+        const totalSec = Math.abs(Math.round((minutes || 0) * 60));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        return `${h} jam ${m} menit ${s} detik`;
+    };
 
     return (
         <AuthenticatedLayout header="Slip Gaji">
@@ -48,16 +66,45 @@ export default function SlipGaji({ payroll }) {
                         </div>
                     </div>
 
-                    {/* Employee Info */}
-                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50/50 border-b border-slate-200/60">
-                        <div className="space-y-2">
-                            <InfoRow label="NIP" value={u?.nip || u?.employee_id} />
-                            <InfoRow label="Nama Karyawan" value={u?.name} />
-                            <InfoRow label="Jabatan" value={u?.position} />
-                        </div>
-                        <div className="space-y-2">
-                            <InfoRow label="Unit / Dept." value={u?.department} />
-                            <InfoRow label="Periode" value={`${months[p.month]} ${p.year}`} />
+                    {/* Employee Info - bordered table format like image 2 */}
+                    <div className="p-6 bg-slate-50/50 border-b border-slate-200/60">
+                        <div className="border border-slate-300 rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                                <tbody className="divide-y divide-slate-200">
+                                    <tr>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 w-36 uppercase text-xs">Nama Pegawai</td>
+                                        <td className="px-1 py-2 text-slate-400 w-4">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.name}</td>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 w-36 uppercase text-xs">Periode</td>
+                                        <td className="px-1 py-2 text-slate-400 w-4">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{months[p.month]} {p.year}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">NIP</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.nip || u?.employee_id}</td>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">No. BPJS Kesehatan</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.bpjs_kesehatan || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">Jabatan</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.position || '-'}</td>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">No. BPJS TK</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.bpjs_ketenagakerjaan || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">Tanggal Masuk</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.join_date ? new Date(u.join_date).toLocaleDateString('id-ID') : '-'}</td>
+                                        <td className="px-3 py-2 font-bold text-slate-600 bg-slate-50 uppercase text-xs">No. NPWP</td>
+                                        <td className="px-1 py-2 text-slate-400">:</td>
+                                        <td className="px-3 py-2 text-slate-800">{u?.npwp || '-'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -68,75 +115,85 @@ export default function SlipGaji({ payroll }) {
                             Rekap Kehadiran
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <AttendanceCard label="Hari Kerja" value={p.total_work_days} unit="hari" color="bg-slate-50" />
                             <AttendanceCard label="Hadir" value={p.present_days} unit="hari" color="bg-emerald-50 text-emerald-700" />
-                            <AttendanceCard label="Terlambat" value={p.late_days} unit="hari" color="bg-amber-50 text-amber-700" />
+                            <AttendanceCard label="Terlambat" value={fmtMinutes(p.late_minutes)} unit="" color="bg-amber-50 text-amber-700" isText />
+                            <AttendanceCard label="Tidak Hadir" value={p.absent_days} unit="hari" color="bg-red-50 text-red-700" />
                             <AttendanceCard label="Cuti" value={p.leave_days} unit="hari" color="bg-blue-50 text-blue-700" />
                             <AttendanceCard label="Sakit" value={p.sick_days} unit="hari" color="bg-orange-50 text-orange-700" />
-                            <AttendanceCard label="Tidak Hadir" value={p.absent_days} unit="hari" color="bg-red-50 text-red-700" />
+                            <AttendanceCard label="Lembur" value={fmtHours(p.overtime_hours)} unit="" color="bg-purple-50 text-purple-700" isText />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                            <AttendanceCard label="Jatah Cuti" value={ci.jatah_cuti} unit="hari" color="bg-indigo-50 text-indigo-700" />
+                            <AttendanceCard label="Cuti Terpakai" value={ci.cuti_terpakai} unit="hari" color="bg-pink-50 text-pink-700" />
+                            <AttendanceCard label="Sisa Cuti" value={ci.sisa_cuti} unit="hari" color="bg-teal-50 text-teal-700" />
                         </div>
                     </div>
 
-                    {/* Two-column: Pendapatan + Potongan */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-x divide-slate-200/60">
-                        {/* Left: Pendapatan */}
-                        <div className="p-6">
-                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <span className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-sm">💰</span>
-                                Pendapatan
-                            </h3>
-                            <div className="space-y-1.5">
-                                <SalaryRow label="Gaji Pokok" value={p.base_salary} />
-                                {Number(p.position_allowance) > 0 && <SalaryRow label="Tunj. Jabatan" value={p.position_allowance} />}
-                                {Number(p.functional_allowance) > 0 && <SalaryRow label="Tunj. Fungsional" value={p.functional_allowance} />}
-                                {Number(p.special_allowance) > 0 && <SalaryRow label="Tunj. Khusus" value={p.special_allowance} />}
-                                {Number(p.meal_allowance) > 0 && <SalaryRow label="Tunj. Makan" value={p.meal_allowance} />}
-                                {Number(p.transport_allowance) > 0 && <SalaryRow label="Tunj. Transport" value={p.transport_allowance} />}
-                                {Number(p.attendance_allowance) > 0 && <SalaryRow label="Tunj. Kehadiran" value={p.attendance_allowance} />}
-                                <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-emerald-200">
-                                    <span className="font-bold text-slate-800 text-sm">BRUTO</span>
-                                    <span className="font-bold text-emerald-600">Rp {fmt(p.gross_salary)}</span>
-                                </div>
+                    {/* Pendapatan */}
+                    <div className="p-6 border-b border-slate-200/60">
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                            <span className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-sm">💰</span>
+                            Pendapatan
+                        </h3>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2 pb-1 border-b border-slate-200">Gaji & Tunjangan</p>
+                        <div className="space-y-1.5">
+                            <SalaryRow label="Gaji Pokok" value={p.base_salary} />
+                            <SalaryRow label="Tunj. Jabatan" value={p.position_allowance} />
+                            <SalaryRow label="Tunj. Fungsional" value={p.functional_allowance} />
+                            <SalaryRow label="Tunj. Khusus" value={p.special_allowance} />
+                            <SalaryRow label="Tunj. Makan" value={p.meal_allowance} />
+                            <SalaryRow label="Tunj. Transport" value={p.transport_allowance} />
+                            <SalaryRow label="Tunj. Kehadiran" value={p.attendance_allowance} />
+                            <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-emerald-200">
+                                <span className="font-bold text-slate-800 text-sm">BRUTO</span>
+                                <span className="font-bold text-emerald-600">Rp {fmt(p.gross_salary)}</span>
+                            </div>
 
-                                {/* Lembur & Tambahan */}
-                                {Number(p.overtime_hourly) > 0 && <SalaryRow label="Lembur Jam" value={p.overtime_hourly} />}
-                                {Number(p.overtime_night) > 0 && <SalaryRow label="Lembur Malam" value={p.overtime_night} />}
-                                {Number(p.overtime_shift) > 0 && <SalaryRow label="Lembur Shift" value={p.overtime_shift} />}
-                                {Number(p.overtime_on_call) > 0 && <SalaryRow label="Lembur On Call" value={p.overtime_on_call} />}
-                                {Number(p.overtime_mod) > 0 && <SalaryRow label="Lembur MOD" value={p.overtime_mod} />}
-                                {Number(p.overtime_holiday) > 0 && <SalaryRow label="Lembur Hari Raya" value={p.overtime_holiday} />}
-                                {Number(p.salary_correction) > 0 && <SalaryRow label="Koreksi Upah (+)" value={p.salary_correction} />}
-                                {Number(p.other_allowance) > 0 && <SalaryRow label="Lain-lain (+)" value={p.other_allowance} />}
+                            {/* Lembur */}
+                            <p className="text-xs font-bold text-slate-500 uppercase mt-3 mb-2 pb-1 border-b border-slate-200">Lembur</p>
+                            <SalaryRow label="Lembur Jam" value={p.overtime_hourly} />
+                            <SalaryRow label="Lembur Malam" value={p.overtime_night} />
+                            <SalaryRow label="Lembur Shift" value={p.overtime_shift} />
+                            <SalaryRow label="Lembur On Call" value={p.overtime_on_call} />
+                            <SalaryRow label="Lembur MOD" value={p.overtime_mod} />
+                            <SalaryRow label="Lembur Hari Raya" value={p.overtime_holiday} />
 
-                                <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-emerald-300">
-                                    <span className="font-bold text-slate-800 text-sm">TOTAL PENDAPATAN</span>
-                                    <span className="font-bold text-lg text-emerald-600">Rp {fmt(totalPendapatan)}</span>
-                                </div>
+                            {/* Tambahan */}
+                            <p className="text-xs font-bold text-slate-500 uppercase mt-3 mb-2 pb-1 border-b border-slate-200">Tambahan Lainnya</p>
+                            <SalaryRow label="Koreksi Upah (+)" value={p.salary_correction} />
+                            <SalaryRow label="Lain-lain (+)" value={p.other_allowance} />
+
+                            <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-emerald-300">
+                                <span className="font-bold text-slate-800 text-sm">TOTAL PENDAPATAN</span>
+                                <span className="font-bold text-lg text-emerald-600">Rp {fmt(totalPendapatan)}</span>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Right: Potongan */}
-                        <div className="p-6">
-                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <span className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-sm">📉</span>
-                                Potongan
-                            </h3>
-                            <div className="space-y-1.5">
-                                <SalaryRow label="CDT" value={p.cdt_deduction} isDeduction />
-                                <SalaryRow label="Alpa" value={p.alpha_deduction} isDeduction />
-                                {Number(p.cashbond_deduction) > 0 && <SalaryRow label="Cashbond" value={p.cashbond_deduction} isDeduction />}
-                                {Number(p.piutang_obat_deduction) > 0 && <SalaryRow label="Piutang Obat" value={p.piutang_obat_deduction} isDeduction />}
-                                {Number(p.salary_correction_deduction) > 0 && <SalaryRow label="Koreksi Upah (-)" value={p.salary_correction_deduction} isDeduction />}
-                                {Number(p.bank_admin_deduction) > 0 && <SalaryRow label="Adm. Bank" value={p.bank_admin_deduction} isDeduction />}
-                                {Number(p.pph21) > 0 && <SalaryRow label="PPh 21" value={p.pph21} isDeduction />}
-                                {Number(p.other_deduction) > 0 && <SalaryRow label="Potongan Lainnya" value={p.other_deduction} isDeduction />}
-                                <SalaryRow label="BPJS Kesehatan (1%)" value={p.bpjs_kesehatan} isDeduction />
-                                <SalaryRow label="BPJS TK JHT (2%)" value={p.bpjs_ketenagakerjaan} isDeduction />
-                                <SalaryRow label="BPJS TK JP (1%)" value={p.bpjs_pensiun_jp || p.bpjs_pensiun} isDeduction />
-                                <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-red-200">
-                                    <span className="font-bold text-slate-800 text-sm">TOTAL POTONGAN</span>
-                                    <span className="font-bold text-lg text-red-600">- Rp {fmt(p.total_deduction)}</span>
-                                </div>
+                    {/* Potongan */}
+                    <div className="p-6 border-b border-slate-200/60">
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                            <span className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-sm">📉</span>
+                            Potongan
+                        </h3>
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2 pb-1 border-b border-slate-200">BPJS & Pajak</p>
+                        <div className="space-y-1.5">
+                            <SalaryRow label="BPJS Kesehatan (1%)" value={p.bpjs_kesehatan} isDeduction />
+                            <SalaryRow label="BPJS TK - JHT (2%)" value={p.bpjs_ketenagakerjaan} isDeduction />
+                            <SalaryRow label="BPJS TK - JP (1%)" value={p.bpjs_pensiun_jp || p.bpjs_pensiun} isDeduction />
+                            <SalaryRow label="PPh 21" value={p.pph21} isDeduction />
+                            
+                            <p className="text-xs font-bold text-slate-500 uppercase mt-3 mb-2 pb-1 border-b border-slate-200">Potongan Admin</p>
+                            <SalaryRow label="CDT" value={p.cdt_deduction} isDeduction />
+                            <SalaryRow label="Alpha / Ketidakhadiran" value={p.alpha_deduction} isDeduction />
+                            <SalaryRow label="Cashbond" value={p.cashbond_deduction} isDeduction />
+                            <SalaryRow label="Piutang Obat" value={p.piutang_obat_deduction} isDeduction />
+                            <SalaryRow label="Koreksi Upah (-)" value={p.salary_correction_deduction} isDeduction />
+                            <SalaryRow label="Adm. Bank" value={p.bank_admin_deduction} isDeduction />
+                            <SalaryRow label="Potongan Lainnya" value={p.other_deduction} isDeduction />
+                            <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-red-200">
+                                <span className="font-bold text-slate-800 text-sm">TOTAL POTONGAN</span>
+                                <span className="font-bold text-lg text-red-600">- Rp {fmt(p.total_deduction)}</span>
                             </div>
                         </div>
                     </div>
@@ -145,17 +202,33 @@ export default function SlipGaji({ payroll }) {
                     <div className="p-6 bg-gradient-to-r from-emerald-500 to-emerald-600">
                         <div className="flex items-center justify-between text-white">
                             <div>
-                                <p className="text-emerald-100 text-sm font-medium uppercase">Gaji Dibayarkan (Take Home Pay)</p>
+                                <p className="text-emerald-100 text-sm font-medium uppercase">Gaji Bersih (Take Home Pay)</p>
                                 <p className="text-3xl font-extrabold mt-1">Rp {fmt(p.net_salary)}</p>
                             </div>
                             <div className="text-5xl opacity-30">💵</div>
                         </div>
                     </div>
 
+                    {/* Signatures */}
+                    <div className="p-6 grid grid-cols-2 gap-6">
+                        <div className="text-center">
+                            <p className="text-sm text-slate-500 mb-16">Diterima oleh,</p>
+                            <p className="font-bold text-slate-800 border-b border-slate-300 inline-block pb-1 px-4">{u?.name}</p>
+                            <p className="text-xs text-slate-500 mt-1">Karyawan</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs text-slate-500 mb-1">Bekasi, {new Date().getDate()} {months[p.month]} {p.year}</p>
+                            <p className="text-sm text-slate-500 mb-14">Disetujui oleh,</p>
+                            <p className="font-bold text-slate-800 border-b border-slate-300 inline-block pb-1 px-8">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+                            <p className="text-xs text-slate-500 mt-1">HRD</p>
+                            <p className="text-xs text-slate-500">Admin SDM</p>
+                        </div>
+                    </div>
+
                     {/* Footer */}
-                    <div className="p-6 bg-slate-50/50 text-center">
-                        <p className="text-xs text-slate-400">Dokumen ini bersifat rahasia dan hanya untuk penerima yang dituju.</p>
-                        <p className="text-xs text-slate-400 mt-1">RS Kartika Husada Setu — Sistem Penggajian</p>
+                    <div className="p-4 bg-slate-50/50 text-center border-t border-slate-200/60">
+                        <p className="text-xs text-red-400 italic">Dokumen ini bersifat rahasia dan hanya untuk penerima yang dituju.</p>
+                        <p className="text-xs text-slate-400 mt-1">Dicetak {new Date().toLocaleDateString('id-ID')} {new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})} | RS Kartika Husada Setu by:{u?.name}</p>
                     </div>
                 </div>
             </div>
@@ -163,20 +236,15 @@ export default function SlipGaji({ payroll }) {
     );
 }
 
-function InfoRow({ label, value }) {
-    return (
-        <div className="flex text-sm">
-            <span className="w-40 text-slate-500 font-medium">{label}</span>
-            <span className="text-slate-800 font-semibold">: {value}</span>
-        </div>
-    );
-}
-
-function AttendanceCard({ label, value, unit, color }) {
+function AttendanceCard({ label, value, unit, color, isText = false }) {
     return (
         <div className={`${color} rounded-xl p-3 text-center`}>
-            <p className="text-xl font-extrabold">{value}</p>
-            <p className="text-xs font-medium mt-0.5">{label} ({unit})</p>
+            {isText ? (
+                <p className="text-sm font-bold">{value}</p>
+            ) : (
+                <p className="text-xl font-extrabold">{value}</p>
+            )}
+            <p className="text-xs font-medium mt-0.5">{label}{unit ? ` (${unit})` : ''}</p>
         </div>
     );
 }

@@ -59,7 +59,7 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                         <div className="flex-1">
                             <input
                                 type="text"
-                                placeholder="Cari nama, ID, atau email..."
+                                placeholder="Cari nama atau NIP..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -135,10 +135,11 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200/60">
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Karyawan</th>
-                                    <th className="px-5 py-4 text-left font-semibold text-slate-600">ID</th>
+                                    <th className="px-5 py-4 text-left font-semibold text-slate-600">NIP</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Departemen</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Jabatan</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Gaji Pokok</th>
+                                    <th className="px-5 py-4 text-center font-semibold text-slate-600">Jatah Cuti</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Status</th>
                                     <th className="px-5 py-4 text-center font-semibold text-slate-600">Aksi</th>
                                 </tr>
@@ -153,14 +154,19 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-slate-800">{employee.name}</p>
-                                                    <p className="text-xs text-slate-400">{employee.email}</p>
+                                                    <p className="text-xs text-slate-400">{employee.nip}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-5 py-4 font-mono text-slate-600">{employee.employee_id}</td>
+                                        <td className="px-5 py-4 font-mono text-slate-600">{employee.nip || employee.employee_id}</td>
                                         <td className="px-5 py-4 text-slate-600">{employee.department}</td>
                                         <td className="px-5 py-4 text-slate-600">{employee.position}</td>
                                         <td className="px-5 py-4 font-mono text-slate-700">{formatCurrency(employee.base_salary)}</td>
+                                        <td className="px-5 py-4 text-center">
+                                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                                                {employee.jatah_cuti ?? 12} hari
+                                            </span>
+                                        </td>
                                         <td className="px-5 py-4">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
                                                 employee.status === 'active'
@@ -185,7 +191,7 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                 ))}
                                 {employees.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
                                             <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>

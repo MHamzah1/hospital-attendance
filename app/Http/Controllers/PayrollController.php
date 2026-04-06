@@ -265,8 +265,22 @@ class PayrollController extends Controller
 
         $payroll->load('user');
 
+        // Hitung info cuti
+        $jatahCuti = $payroll->user->jatah_cuti ?? 12;
+        $cutiTerpakai = LeaveRequest::where('user_id', $payroll->user_id)
+            ->where('type', 'cuti_tahunan')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $payroll->year)
+            ->sum('total_days');
+        $sisaCuti = $jatahCuti - $cutiTerpakai;
+
         return Inertia::render('Payroll/SlipGaji', [
             'payroll' => $payroll,
+            'cutiInfo' => [
+                'jatah_cuti' => $jatahCuti,
+                'cuti_terpakai' => $cutiTerpakai,
+                'sisa_cuti' => $sisaCuti,
+            ],
         ]);
     }
 
@@ -301,10 +315,25 @@ class PayrollController extends Controller
 
         $months = $this->monthNames();
 
+        // Hitung info cuti
+        $jatahCuti = $payroll->user->jatah_cuti ?? 12;
+        $cutiTerpakai = LeaveRequest::where('user_id', $payroll->user_id)
+            ->where('type', 'cuti_tahunan')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $payroll->year)
+            ->sum('total_days');
+        $sisaCuti = $jatahCuti - $cutiTerpakai;
+
         $pdf      = Pdf::loadView('payroll.slip-pdf', [
             'payroll'   => $payroll,
             'monthName' => $months[$payroll->month],
+            'cutiInfo'  => [
+                'jatah_cuti' => $jatahCuti,
+                'cuti_terpakai' => $cutiTerpakai,
+                'sisa_cuti' => $sisaCuti,
+            ],
         ]);
+        $pdf->setPaper('a4', 'portrait');
         $fileName = "SlipGaji_{$payroll->user->name}_{$months[$payroll->month]}_{$payroll->year}.pdf";
 
         return $pdf->download($fileName);

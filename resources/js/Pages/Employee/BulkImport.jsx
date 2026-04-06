@@ -37,6 +37,7 @@ export default function BulkImport({ flash }) {
         { key: 'bank_name', label: 'Nama Rekening', aliases: ['namarekening', 'bankname', 'namabank', 'atasnama', 'nama_rekening', 'atas_nama', 'nama_pemilik'] },
         { key: 'bank_account', label: 'Nomor Rekening', aliases: ['nomorrekening', 'norekening', 'norek', 'bankaccount', 'rekening', 'nomor_rekening', 'no_rekening'] },
         { key: 'status', label: 'Status Karyawan', aliases: ['status', 'statuskaryawan', 'sts', 'status_karyawan'] },
+        { key: 'jatah_cuti', label: 'Jatah Cuti', aliases: ['jatahcuti', 'jatah_cuti', 'cutipertahun', 'cuti_per_tahun', 'leaveallowance', 'cuti'] },
     ];
 
     const getCsrfToken = () => {

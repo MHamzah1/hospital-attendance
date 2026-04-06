@@ -5,7 +5,6 @@ export default function EmployeeEdit({ employee }) {
     const { data, setData, put, processing, errors } = useForm({
         // Informasi Dasar
         name: employee.name || '',
-        email: employee.email || '',
         password: '',
         nip: employee.nip || '',
         gender: employee.gender || '',
@@ -21,6 +20,7 @@ export default function EmployeeEdit({ employee }) {
         position: employee.position || '',
         join_date: employee.join_date || '',
         status: employee.status || 'active',
+        jatah_cuti: employee.jatah_cuti ?? 12,
         
         // Komponen Gaji (7 fields)
         base_salary: employee.base_salary || '',
@@ -101,7 +101,6 @@ export default function EmployeeEdit({ employee }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <InputField label="NIP" name="nip" required />
                             <InputField label="Nama Lengkap" name="name" required />
-                            <InputField label="Email" name="email" type="email" required />
                             <InputField label="Password Baru" name="password" type="password" hint="Kosongkan jika tidak ingin mengubah password" />
                             
                             <div>
@@ -154,6 +153,7 @@ export default function EmployeeEdit({ employee }) {
                             </div>
                             <InputField label="Jabatan" name="position" required />
                             <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
+                            <InputField label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" hint="Default 12 hari per tahun" />
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
                                 <select

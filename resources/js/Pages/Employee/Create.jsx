@@ -6,7 +6,6 @@ export default function EmployeeCreate() {
         // Informasi Dasar
         nip: '',
         name: '',
-        email: '',
         password: '',
         gender: '',
         education: '',
@@ -21,6 +20,7 @@ export default function EmployeeCreate() {
         position: '',
         join_date: '',
         status: 'active',
+        jatah_cuti: 12,
         
         // Komponen Gaji (7 fields)
         base_salary: '',
@@ -101,7 +101,6 @@ export default function EmployeeCreate() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <InputField label="NIP" name="nip" required placeholder="2021C171" />
                             <InputField label="Nama Lengkap" name="name" required placeholder="dr. Jati Sarasanti" />
-                            <InputField label="Email" name="email" type="email" required placeholder="email@hospital.com" />
                             <InputField label="Password" name="password" type="password" required placeholder="Minimal 8 karakter" hint="Kosongkan untuk generate otomatis dari NIP" />
                             
                             <div>
@@ -154,6 +153,7 @@ export default function EmployeeCreate() {
                             </div>
                             <InputField label="Jabatan" name="position" required placeholder="Dokter, Perawat, dll" />
                             <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
+                            <InputField label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" placeholder="12" hint="Default 12 hari per tahun" />
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
                                 <select
