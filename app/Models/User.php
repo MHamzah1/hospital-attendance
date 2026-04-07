@@ -26,7 +26,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'join_date' => 'date',
+            'join_date' => 'date:Y-m-d',
         ];
     }
 

@@ -1,0 +1,18 @@
+1. Filter unit di cuti & lembur
+2. Approve cuti & lembur (Koordinator, Manajer Departemen, Manajer HRD) 
+3. 
+
+
+
+
+1. pada data karyawan sekarang tambahkan Unit pada excel setelah Departemen lalu sinkronisasi kesemua sistem
+2. pada menu pengajuan cuti & lembur, admin bisa filter "Unit"
+3. buat admin agar bisa setting hak akses user, jadi sekarang approve harus melewati beberapa user contoh seperti (Koordinator Unit > Manajer Unit > Manajer HRD > ADMIN SDM)
+4. alur approve harus melewati beberapa user seperti diatas, lalu
+
+
+1. untuk jatah cuti juga masukkan pada excel
+2. untuk semua tunjangan buat perbulan (bukan perhari)
+3. "Unit" belum ada pada "Edit Karyawan"
+4. untuk komponen gaji jangan pakai (00) di belakang angka
+5. kalau sudah 1-4 sudah semua, kosongkan data karyawan agar saya bisa input ulang

@@ -209,8 +209,8 @@ export default function EmployeeCreate() {
                                     <InputField label="1. Tunjangan Jabatan" name="position_allowance" type="number" placeholder="0" prefix="Rp" />
                                     <InputField label="2. Tunjangan Fungsional" name="functional_allowance" type="number" placeholder="0" prefix="Rp" />
                                     <InputField label="3. Tunjangan Khusus" name="special_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="4. Tunjangan Makan (per hari)" name="meal_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="5. Tunjangan Transport (per hari)" name="transport_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField label="4. Tunjangan Makan (per bulan)" name="meal_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField label="5. Tunjangan Transport (per bulan)" name="transport_allowance" type="number" placeholder="0" prefix="Rp" />
                                     <InputField label="6. Tunjangan Kehadiran" name="attendance_allowance" type="number" placeholder="0" prefix="Rp" />
                                 </div>
                             </div>

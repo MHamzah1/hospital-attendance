@@ -60,6 +60,7 @@ export default function BulkImport({ flash }) {
         try {
             const response = await fetch('/bulk-import/preview', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
@@ -114,6 +115,7 @@ export default function BulkImport({ flash }) {
         try {
             const response = await fetch('/bulk-import/process', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',

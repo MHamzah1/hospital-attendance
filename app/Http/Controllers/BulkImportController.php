@@ -60,7 +60,8 @@ class BulkImportController extends Controller
                 try {
                     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
                     $worksheet = $spreadsheet->getActiveSheet();
-                    $sheetData = $worksheet->toArray();
+                    // formatData=false agar tanggal dikembalikan sebagai serial number Excel (lebih akurat)
+                    $sheetData = $worksheet->toArray(null, true, false, false);
                     // Hapus baris kosong di awal jika ada
                     while (!empty($sheetData) && empty(array_filter($sheetData[0]))) {
                         array_shift($sheetData);
@@ -131,7 +132,8 @@ class BulkImportController extends Controller
                 // Handle XLSX/XLS
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
                 $worksheet = $spreadsheet->getActiveSheet();
-                $sheetData = $worksheet->toArray();
+                // formatData=false agar tanggal dikembalikan sebagai serial number Excel (lebih akurat)
+                $sheetData = $worksheet->toArray(null, true, false, false);
                 // Skip empty rows at top
                 while (!empty($sheetData) && empty(array_filter($sheetData[0]))) {
                     array_shift($sheetData);
@@ -202,7 +204,7 @@ class BulkImportController extends Controller
             'phone' => '',
             'address' => '',
             'city' => '',
-            'join_date' => date('Y-m-d'),
+            'join_date' => null,
             'npwp' => '',
             'bpjs_kesehatan' => '',
             'bpjs_ketenagakerjaan' => '',
@@ -258,8 +260,8 @@ class BulkImportController extends Controller
             }
 
             // Handle date fields - parse various formats
-            if (in_array($field, ['birth_date', 'join_date']) && $value) {
-                $value = $this->parseDate($value);
+            if (in_array($field, ['birth_date', 'join_date'])) {
+                $value = ($value && $value !== '0') ? $this->parseDate($value) : null;
             }
 
             $data[$field] = $value;
@@ -310,13 +312,20 @@ class BulkImportController extends Controller
             }
         }
 
-        // Try common formats: m/d/Y, d/m/Y, d-m-Y, etc.
-        $formats = ['m/d/Y', 'd/m/Y', 'Y/m/d', 'd-m-Y', 'm-d-Y', 'd.m.Y'];
+        // Try common formats - d/m/Y first (Indonesian locale), then m/d/Y
+        // Also handle 2-digit years (y) as fallback
+        $formats = ['d/m/Y', 'd-m-Y', 'd.m.Y', 'Y/m/d', 'm/d/Y', 'm-d-Y', 'd/m/y', 'd-m-y', 'm/d/y'];
         foreach ($formats as $format) {
             $parsed = \DateTime::createFromFormat($format, $value);
-            if ($parsed) {
+            $errors = \DateTime::getLastErrors();
+            if ($parsed && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
                 $year = (int)$parsed->format('Y');
-                if ($year < 1900 || $year > 2100) return null;
+                // Fix 2-digit years: 00-49 → 2000-2049, 50-99 → 1950-1999
+                if ($year < 100) {
+                    $year += ($year < 50) ? 2000 : 1900;
+                    $parsed->setDate($year, (int)$parsed->format('m'), (int)$parsed->format('d'));
+                }
+                if ($year < 1900 || $year > 2100) continue;
                 return $parsed->format('Y-m-d');
             }
         }
@@ -370,11 +379,12 @@ class BulkImportController extends Controller
             'NAMA_REKENING',
             'NOMOR_REKENING',
             'STATUS',
+            'JATAH_CUTI',
         ];
 
         $sampleData = [
-            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'IGD', 'Dokter', 5000000, 1000000, 800000, 500000, 500000, 300000, 250000, '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF'],
-            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Rawat Inap Lt.2', 'Perawat', 3500000, 500000, 400000, 300000, 500000, 300000, 200000, '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF'],
+            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'IGD', 'Dokter', 5000000, 1000000, 800000, 500000, 500000, 300000, 250000, '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF', 12],
+            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Rawat Inap Lt.2', 'Perawat', 3500000, 500000, 400000, 300000, 500000, 300000, 200000, '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF', 12],
         ];
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -384,7 +394,8 @@ class BulkImportController extends Controller
         $sheet->fromArray($sampleData[0], null, 'A2');
         $sheet->fromArray($sampleData[1], null, 'A3');
 
-        foreach (range('A', 'W') as $col) {
+        $allCols = array_merge(range('A', 'Z'), ['AA', 'AB']);
+        foreach ($allCols as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

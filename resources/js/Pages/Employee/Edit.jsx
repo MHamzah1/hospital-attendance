@@ -19,18 +19,18 @@ export default function EmployeeEdit({ employee }) {
         department: employee.department || '',
         unit: employee.unit || '',
         position: employee.position || '',
-        join_date: employee.join_date || '',
+        join_date: employee.join_date ? employee.join_date.split('T')[0] : '',
         status: employee.status || 'active',
         jatah_cuti: employee.jatah_cuti ?? 12,
         
         // Komponen Gaji (7 fields)
-        base_salary: employee.base_salary || '',
-        position_allowance: employee.position_allowance || '0',
-        functional_allowance: employee.functional_allowance || '0',
-        special_allowance: employee.special_allowance || '0',
-        meal_allowance: employee.meal_allowance || '0',
-        transport_allowance: employee.transport_allowance || '0',
-        attendance_allowance: employee.attendance_allowance || '0',
+        base_salary: parseFloat(employee.base_salary) || '',
+        position_allowance: parseFloat(employee.position_allowance) || 0,
+        functional_allowance: parseFloat(employee.functional_allowance) || 0,
+        special_allowance: parseFloat(employee.special_allowance) || 0,
+        meal_allowance: parseFloat(employee.meal_allowance) || 0,
+        transport_allowance: parseFloat(employee.transport_allowance) || 0,
+        attendance_allowance: parseFloat(employee.attendance_allowance) || 0,
         
         // Dokumen & Bank
         npwp: employee.npwp || '',
@@ -208,8 +208,8 @@ export default function EmployeeEdit({ employee }) {
                                     <InputField label="1. Tunjangan Jabatan" name="position_allowance" type="number" prefix="Rp" />
                                     <InputField label="2. Tunjangan Fungsional" name="functional_allowance" type="number" prefix="Rp" />
                                     <InputField label="3. Tunjangan Khusus" name="special_allowance" type="number" prefix="Rp" />
-                                    <InputField label="4. Tunjangan Makan (per hari)" name="meal_allowance" type="number" prefix="Rp" />
-                                    <InputField label="5. Tunjangan Transport (per hari)" name="transport_allowance" type="number" prefix="Rp" />
+                                    <InputField label="4. Tunjangan Makan (per bulan)" name="meal_allowance" type="number" prefix="Rp" />
+                                    <InputField label="5. Tunjangan Transport (per bulan)" name="transport_allowance" type="number" prefix="Rp" />
                                     <InputField label="6. Tunjangan Kehadiran" name="attendance_allowance" type="number" prefix="Rp" />
                                 </div>
                             </div>
