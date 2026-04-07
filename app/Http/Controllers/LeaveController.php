@@ -16,6 +16,7 @@ class LeaveController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $search = $request->get('search', '');
+        $unit = $request->get('unit', 'all');
 
         $query = $user->isAdmin()
             ? LeaveRequest::with('user', 'approver')
@@ -42,7 +43,19 @@ class LeaveController extends Controller
             });
         }
 
+        if ($unit !== 'all' && $user->isAdmin()) {
+            $query->whereHas('user', function ($q) use ($unit) {
+                $q->where('unit', $unit);
+            });
+        }
+
         $leaves = $query->latest()->paginate(15)->withQueryString();
+
+        $units = \App\Models\User::where('role', 'karyawan')
+            ->whereNotNull('unit')
+            ->where('unit', '!=', '')
+            ->distinct()
+            ->pluck('unit');
 
         return Inertia::render('Leave/Index', [
             'leaves' => $leaves,
@@ -51,8 +64,10 @@ class LeaveController extends Controller
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
                 'search' => $search,
+                'unit' => $unit,
             ],
             'typeLabels' => LeaveRequest::typeLabels(),
+            'units' => $units,
         ]);
     }
 

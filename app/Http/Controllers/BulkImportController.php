@@ -197,6 +197,7 @@ class BulkImportController extends Controller
             'birth_place' => '',
             'birth_date' => null,
             'department' => '',
+            'unit' => '',
             'position' => '',
             'phone' => '',
             'address' => '',
@@ -353,6 +354,7 @@ class BulkImportController extends Controller
             'KOTA',
             'NO_HP',
             'DEPARTEMEN',
+            'UNIT',
             'JABATAN',
             'GAJI_POKOK',
             'TUNJANGAN_JABATAN',
@@ -371,8 +373,8 @@ class BulkImportController extends Controller
         ];
 
         $sampleData = [
-            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'Dokter', 5000000, 1000000, 800000, 500000, 500000, 300000, 250000, '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF'],
-            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Perawat', 3500000, 500000, 400000, 300000, 500000, 300000, 200000, '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF'],
+            [1, '2021C171', 'dr. Jati Sarasanti', 'P', 'S1', 'Surabaya', '1990-05-15', 'Jl. Kesehatan No. 1', 'Surabaya', '08123456789', 'Dokter Umum', 'IGD', 'Dokter', 5000000, 1000000, 800000, 500000, 500000, 300000, 250000, '2021-01-15', '12.345.678.9-012.000', '0001234567890', '0001234567890', 'Jati Sarasanti', '1234567890', 'AKTIF'],
+            [2, '2021C172', 'Sri Handayani', 'P', 'D3', 'Jakarta', '1992-08-20', 'Jl. Sehat No. 2', 'Jakarta', '08198765432', 'Keperawatan', 'Rawat Inap Lt.2', 'Perawat', 3500000, 500000, 400000, 300000, 500000, 300000, 200000, '2021-02-01', '98.765.432.1-098.000', '0009876543210', '0009876543210', 'Sri Handayani', '9876543210', 'AKTIF'],
         ];
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

@@ -3,12 +3,13 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import FlashMessage from '@/Components/FlashMessage';
 
-export default function EmployeeIndex({ employees, departments, filters, flash, activeCount, inactiveCount }) {
+export default function EmployeeIndex({ employees, departments, units, filters, flash, activeCount, inactiveCount }) {
     const [search, setSearch] = useState(filters.search || '');
     const [department, setDepartment] = useState(filters.department || 'all');
+    const [unit, setUnit] = useState(filters.unit || 'all');
 
     const handleFilter = () => {
-        router.get(route('employees.index'), { search, department }, { preserveState: true });
+        router.get(route('employees.index'), { search, department, unit }, { preserveState: true });
     };
 
     const handleKeyDown = (e) => {
@@ -76,6 +77,16 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                 <option key={dept} value={dept}>{dept}</option>
                             ))}
                         </select>
+                        <select
+                            value={unit}
+                            onChange={e => setUnit(e.target.value)}
+                            className="rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                        >
+                            <option value="all">Semua Unit</option>
+                            {units.map(u => (
+                                <option key={u} value={u}>{u}</option>
+                            ))}
+                        </select>
                         <button
                             onClick={handleFilter}
                             className="px-5 py-2.5 bg-slate-700 text-white rounded-xl font-medium hover:bg-slate-800 transition-all text-sm"
@@ -137,6 +148,7 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Karyawan</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">NIP</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Departemen</th>
+                                    <th className="px-5 py-4 text-left font-semibold text-slate-600">Unit</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Jabatan</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Gaji Pokok</th>
                                     <th className="px-5 py-4 text-center font-semibold text-slate-600">Jatah Cuti</th>
@@ -160,6 +172,7 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                         </td>
                                         <td className="px-5 py-4 font-mono text-slate-600">{employee.nip || employee.employee_id}</td>
                                         <td className="px-5 py-4 text-slate-600">{employee.department}</td>
+                                        <td className="px-5 py-4 text-slate-600">{employee.unit || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{employee.position}</td>
                                         <td className="px-5 py-4 font-mono text-slate-700">{formatCurrency(employee.base_salary)}</td>
                                         <td className="px-5 py-4 text-center">
@@ -191,7 +204,7 @@ export default function EmployeeIndex({ employees, departments, filters, flash, 
                                 ))}
                                 {employees.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-400">
+                                        <td colSpan={9} className="px-5 py-12 text-center text-slate-400">
                                             <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>

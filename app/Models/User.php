@@ -11,7 +11,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'nip', 'password', 'role', 'employee_id', 'department',
+        'name', 'email', 'nip', 'password', 'role', 'employee_id', 'department', 'unit',
         'position', 'phone', 'address', 'join_date', 'npwp',
         'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo', 'shift_id',
         'base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance',

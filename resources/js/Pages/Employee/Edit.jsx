@@ -17,6 +17,7 @@ export default function EmployeeEdit({ employee }) {
         address: employee.address || '',
         city: employee.city || '',
         department: employee.department || '',
+        unit: employee.unit || '',
         position: employee.position || '',
         join_date: employee.join_date || '',
         status: employee.status || 'active',
@@ -151,6 +152,7 @@ export default function EmployeeEdit({ employee }) {
                                 </select>
                                 {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                             </div>
+                            <InputField label="Unit" name="unit" placeholder="ICU, Rawat Inap Lantai 2, dll" />
                             <InputField label="Jabatan" name="position" required />
                             <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
                             <InputField label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" hint="Default 12 hari per tahun" />

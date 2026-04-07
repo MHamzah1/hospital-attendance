@@ -16,6 +16,7 @@ class EmployeeController extends Controller
 
         $search     = $request->get('search', '');
         $department = $request->get('department', 'all');
+        $unit       = $request->get('unit', 'all');
 
         $query = User::where('role', 'karyawan');
 
@@ -31,6 +32,10 @@ class EmployeeController extends Controller
             $query->where('department', $department);
         }
 
+        if ($unit !== 'all') {
+            $query->where('unit', $unit);
+        }
+
         $employees = $query->latest()->paginate(15);
 
         $departments = User::where('role', 'karyawan')
@@ -38,13 +43,20 @@ class EmployeeController extends Controller
             ->distinct()
             ->pluck('department');
 
+        $units = User::where('role', 'karyawan')
+            ->whereNotNull('unit')
+            ->where('unit', '!=', '')
+            ->distinct()
+            ->pluck('unit');
+
         $activeCount   = User::where('role', 'karyawan')->where('status', 'active')->count();
         $inactiveCount = User::where('role', 'karyawan')->where('status', '!=', 'active')->count();
 
         return Inertia::render('Employee/Index', [
             'employees'     => $employees,
             'departments'   => $departments,
-            'filters'       => ['search' => $search, 'department' => $department],
+            'units'         => $units,
+            'filters'       => ['search' => $search, 'department' => $department, 'unit' => $unit],
             'activeCount'   => $activeCount,
             'inactiveCount' => $inactiveCount,
         ]);
@@ -72,6 +84,7 @@ class EmployeeController extends Controller
             'address'                 => 'nullable|string',
             'city'                    => 'nullable|string',
             'department'              => 'required|string',
+            'unit'                    => 'nullable|string',
             'position'                => 'required|string',
             'join_date'               => 'required|date',
             'status'                  => 'nullable|in:active,inactive',
@@ -128,6 +141,7 @@ class EmployeeController extends Controller
             'address'              => 'nullable|string',
             'city'                 => 'nullable|string',
             'department'           => 'required|string',
+            'unit'                 => 'nullable|string',
             'position'             => 'required|string',
             'join_date'            => 'required|date',
             'status'               => 'required|in:active,inactive',

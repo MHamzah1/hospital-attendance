@@ -17,6 +17,7 @@ export default function EmployeeCreate() {
         address: '',
         city: '',
         department: '',
+        unit: '',
         position: '',
         join_date: '',
         status: 'active',
@@ -151,6 +152,7 @@ export default function EmployeeCreate() {
                                 </select>
                                 {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                             </div>
+                            <InputField label="Unit" name="unit" placeholder="ICU, Rawat Inap Lantai 2, dll" />
                             <InputField label="Jabatan" name="position" required placeholder="Dokter, Perawat, dll" />
                             <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
                             <InputField label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" placeholder="12" hint="Default 12 hari per tahun" />
