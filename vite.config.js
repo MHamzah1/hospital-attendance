@@ -15,6 +15,17 @@ export default defineConfig(({ mode }) => {
 
     const hmrHost = appUrl.hostname;
 
+    // Allow access from all LAN segments
+    const allowedOrigins = [
+        appUrl.origin,
+        'http://192.168.100.50',
+        'https://192.168.100.50',
+        'http://192.168.10.*',
+        'https://192.168.10.*',
+        'http://192.168.20.*',
+        'https://192.168.20.*',
+    ];
+
     return {
         plugins: [
             laravel({
@@ -26,9 +37,7 @@ export default defineConfig(({ mode }) => {
         server: {
             host: '0.0.0.0',
             origin: `http://${hmrHost}:5173`,
-            cors: {
-                origin: appUrl.origin,
-            },
+            cors: true,
             hmr: {
                 host: hmrHost,
                 protocol: appUrl.protocol === 'https:' ? 'wss' : 'ws',
