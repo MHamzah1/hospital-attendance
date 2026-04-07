@@ -158,7 +158,8 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units }) {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-slate-50/80">
-                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Karyawan</th>}
+                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[200px]">Karyawan</th>}
+                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Unit</th>}
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Jenis Cuti</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Durasi</th>
@@ -169,11 +170,12 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {leaves?.data?.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan cuti</td></tr>
+                                <tr><td colSpan={isAdmin ? 9 : 6} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan cuti</td></tr>
                             ) : (
                                 leaves?.data?.map((leave) => (
                                     <tr key={leave.id} className="hover:bg-slate-50/50 transition-colors">
                                         {isAdmin && <td className="px-6 py-3.5 font-medium text-slate-700">{leave.user?.name}</td>}
+                                        {isAdmin && <td className="px-6 py-3.5 text-slate-600">{leave.user?.unit || '-'}</td>}
                                         <td className="px-6 py-3.5 text-slate-600">{typeLabels[leave.type]}</td>
                                         <td className="px-6 py-3.5 text-slate-600 text-xs">
                                             {new Date(leave.start_date).toLocaleDateString('id-ID')} - {new Date(leave.end_date).toLocaleDateString('id-ID')}

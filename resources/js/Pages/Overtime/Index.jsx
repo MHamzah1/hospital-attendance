@@ -175,7 +175,8 @@ export default function OvertimeIndex({ overtimes, filters, units }) {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-slate-50/80">
-                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Karyawan</th>}
+                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[200px]">Karyawan</th>}
+                                {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Unit</th>}
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Waktu</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Total Jam</th>
@@ -188,11 +189,12 @@ export default function OvertimeIndex({ overtimes, filters, units }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {overtimes?.data?.length === 0 ? (
-                                <tr><td colSpan={9} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
+                                <tr><td colSpan={isAdmin ? 11 : 8} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
                             ) : (
                                 overtimes?.data?.map((ot) => (
                                     <tr key={ot.id} className="hover:bg-slate-50/50 transition-colors">
                                         {isAdmin && <td className="px-6 py-3.5 font-medium text-slate-700">{ot.user?.name}</td>}
+                                        {isAdmin && <td className="px-6 py-3.5 text-slate-600">{ot.user?.unit || '-'}</td>}
                                         <td className="px-6 py-3.5 text-slate-600">
                                             {new Date(ot.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
