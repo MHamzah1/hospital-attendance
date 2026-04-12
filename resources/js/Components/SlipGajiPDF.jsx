@@ -428,7 +428,7 @@ const SlipGajiPDF = ({ payroll, cutiInfo, qrDataUrl }) => {
                         <Text style={s.attVal}>{p.present_days || 0} hari</Text>
                         <Text style={s.attLabel}>Terlambat</Text>
                         <Text style={s.attVal}>{fmtMinutes(p.late_minutes)}</Text>
-                        <Text style={s.attLabelBlue}>Tidak Hadir</Text>
+                        <Text style={s.attLabel}>Tidak Hadir</Text>
                         <Text style={s.attValLast}>{p.absent_days || 0} hari</Text>
                     </View>
                     {/* Row 2: Lembur, Cuti, Sakit */}
@@ -437,7 +437,7 @@ const SlipGajiPDF = ({ payroll, cutiInfo, qrDataUrl }) => {
                         <Text style={s.attVal}>{fmtHours(p.overtime_hours)}</Text>
                         <Text style={s.attLabel}>Cuti</Text>
                         <Text style={s.attVal}>{p.leave_days || 0} hari</Text>
-                        <Text style={s.attLabelBlue}>Sakit</Text>
+                        <Text style={s.attLabel}>Sakit</Text>
                         <Text style={s.attValLast}>{p.sick_days || 0} hari</Text>
                     </View>
                     {/* Row 3: Jatah Cuti, Sisa Cuti */}
