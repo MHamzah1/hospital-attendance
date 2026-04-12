@@ -364,8 +364,8 @@ class PayrollImportController extends Controller
 
     private function buildPayrollData($row, $mapping, $month, $year)
     {
-        // Import hanya untuk potongan & koreksi admin.
-        // Gaji, tunjangan, lembur, BPJS diambil dari sistem saat Generate.
+        // Import untuk potongan, koreksi admin, dan BPJS.
+        // Gaji, tunjangan, lembur diambil dari sistem saat Generate.
         $data = [
             'user_id' => null,
             'month' => $month,
@@ -379,6 +379,9 @@ class PayrollImportController extends Controller
             'salary_correction_deduction' => 0,
             'bank_admin_deduction' => 0,
             'pph21' => 0,
+            'bpjs_kesehatan' => 0,
+            'bpjs_ketenagakerjaan' => 0,
+            'bpjs_pensiun_jp' => 0,
             'status' => 'draft',
         ];
 
@@ -387,6 +390,7 @@ class PayrollImportController extends Controller
             'cdt_deduction', 'alpha_deduction', 'cashbond_deduction',
             'piutang_obat_deduction', 'salary_correction_deduction',
             'bank_admin_deduction', 'pph21',
+            'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'bpjs_pensiun_jp',
         ];
 
         foreach ($mapping as $field => $colIndex) {
@@ -463,8 +467,8 @@ class PayrollImportController extends Controller
         ];
 
         // ── Row 1: Title ────────────────────────────────────────────────────
-        $sheet->mergeCells('A1:K1');
-        $sheet->setCellValue('A1', 'DATA PENGGAJIAN — Isi kolom HIJAU (Tambahan) & MERAH (Potongan). Gaji, tunjangan, lembur & BPJS otomatis dari sistem.');
+        $sheet->mergeCells('A1:N1');
+        $sheet->setCellValue('A1', 'DATA PENGGAJIAN — Isi kolom HIJAU (Tambahan) & MERAH (Potongan + BPJS). Gaji, tunjangan & lembur otomatis dari sistem.');
         $sheet->getStyle('A1')->applyFromArray($darkTitle);
         $sheet->getRowDimension(1)->setRowHeight(25);
 
@@ -473,7 +477,7 @@ class PayrollImportController extends Controller
         $sheet->setCellValue('A2', 'IDENTITAS (OTOMATIS)');
         $sheet->mergeCells('C2:D2');
         $sheet->setCellValue('C2', 'TAMBAHAN (+)');
-        $sheet->mergeCells('E2:K2');
+        $sheet->mergeCells('E2:N2');
         $sheet->setCellValue('E2', 'POTONGAN ADMIN (-)');
         foreach (['A2', 'C2', 'E2'] as $c) {
             $sheet->getStyle($c)->applyFromArray($sectionStyle);
@@ -482,17 +486,20 @@ class PayrollImportController extends Controller
 
         // ── Row 3: Column Headers ───────────────────────────────────────────
         $headers = [
-            'A'  => ['NIP',               'blue'],
-            'B'  => ['NAMA',              'blue'],
-            'C'  => ['KOREKSI UPAH (+)',  'green'],
-            'D'  => ['LAIN-LAIN (+)',     'green'],
-            'E'  => ['CDT',              'red'],
-            'F'  => ['ALPA',             'red'],
-            'G'  => ['CASHBOND',         'red'],
-            'H'  => ['PIUTANG OBAT',     'red'],
-            'I'  => ['KOREKSI UPAH (-)', 'red'],
-            'J'  => ['ADM. BANK',        'red'],
-            'K'  => ['PPH 21',           'red'],
+            'A'  => ['NIP',                  'blue'],
+            'B'  => ['NAMA',                 'blue'],
+            'C'  => ['KOREKSI UPAH (+)',     'green'],
+            'D'  => ['LAIN-LAIN (+)',        'green'],
+            'E'  => ['CDT',                  'red'],
+            'F'  => ['ALPA',                 'red'],
+            'G'  => ['CASHBOND',             'red'],
+            'H'  => ['PIUTANG OBAT',         'red'],
+            'I'  => ['KOREKSI UPAH (-)',     'red'],
+            'J'  => ['ADM. BANK',            'red'],
+            'K'  => ['PPH 21',               'red'],
+            'L'  => ['BPJS KESEHATAN (1%)',  'red'],
+            'M'  => ['BPJS TK JHT (2%)',     'red'],
+            'N'  => ['BPJS TK JP (1%)',      'red'],
         ];
 
         foreach ($headers as $col => [$label, $color]) {
@@ -530,8 +537,8 @@ class PayrollImportController extends Controller
                 ]);
                 $sheet->getStyle("{$c}{$row}")->getNumberFormat()->setFormatCode($numFmt);
             }
-            // Potongan columns (red) E-K
-            foreach (range('E', 'K') as $c) {
+            // Potongan columns (red) E-N
+            foreach (['E','F','G','H','I','J','K','L','M','N'] as $c) {
                 $sheet->getStyle("{$c}{$row}")->applyFromArray([
                     'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FCE4EC']],
                     'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
@@ -543,7 +550,7 @@ class PayrollImportController extends Controller
         }
 
         // ── Column Widths ───────────────────────────────────────────────────
-        $widths = ['A' => 16, 'B' => 30, 'C' => 17, 'D' => 15, 'E' => 12, 'F' => 12, 'G' => 14, 'H' => 15, 'I' => 17, 'J' => 14, 'K' => 13];
+        $widths = ['A' => 16, 'B' => 30, 'C' => 17, 'D' => 15, 'E' => 12, 'F' => 12, 'G' => 14, 'H' => 15, 'I' => 17, 'J' => 14, 'K' => 13, 'L' => 20, 'M' => 18, 'N' => 18];
         foreach ($widths as $col => $width) {
             $sheet->getColumnDimension($col)->setWidth($width);
         }

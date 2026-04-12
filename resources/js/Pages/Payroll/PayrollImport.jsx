@@ -26,21 +26,25 @@ export default function PayrollImport({ flash }) {
         return value;
     };
 
-    // Hanya field potongan & koreksi admin. Gaji, tunjangan, lembur, BPJS otomatis dari sistem saat Generate.
+    // Hanya field potongan, koreksi admin & BPJS. Gaji, tunjangan, lembur otomatis dari sistem saat Generate.
     const payrollFields = [
-        { key: 'employee_id',                 label: 'NIP / Employee ID',  aliases: ['nip', 'employeeid', 'id', 'no'] },
-        { key: '_nama',                       label: 'Nama (info)',        aliases: ['nama', 'name', 'namakaryawan'] },
+        { key: 'employee_id',                 label: 'NIP / Employee ID',      aliases: ['nip', 'employeeid', 'id', 'no'] },
+        { key: '_nama',                       label: 'Nama (info)',            aliases: ['nama', 'name', 'namakaryawan'] },
         // Tambahan (+)
-        { key: 'salary_correction',           label: 'Koreksi Upah (+)',   aliases: ['koreksiupahplus', 'koreksiupah'] },
-        { key: 'other_allowance',             label: 'Lain-lain (+)',      aliases: ['lainlainplus', 'lainlain', 'lain_lain', 'other'] },
+        { key: 'salary_correction',           label: 'Koreksi Upah (+)',       aliases: ['koreksiupahplus', 'koreksiupah'] },
+        { key: 'other_allowance',             label: 'Lain-lain (+)',          aliases: ['lainlainplus', 'lainlain', 'lain_lain', 'other'] },
         // Potongan Admin (-)
-        { key: 'cdt_deduction',               label: 'CDT',               aliases: ['cdt', 'potongancdt'] },
-        { key: 'alpha_deduction',             label: 'Alpa',              aliases: ['alpa', 'alpha', 'potonganalpa'] },
-        { key: 'cashbond_deduction',          label: 'Cashbond',          aliases: ['cashbond', 'potongancashbond'] },
-        { key: 'piutang_obat_deduction',      label: 'Piutang Obat',     aliases: ['piutangobat', 'potonganobat'] },
-        { key: 'salary_correction_deduction', label: 'Koreksi Upah (-)', aliases: ['koreksiupahmin', 'potongankoreksi', 'koreksi_upah_min'] },
-        { key: 'bank_admin_deduction',        label: 'Adm. Bank',        aliases: ['admbank', 'adm_bank', 'adminbank'] },
-        { key: 'pph21',                       label: 'PPh 21',           aliases: ['pph21', 'pph', 'pajak'] },
+        { key: 'cdt_deduction',               label: 'CDT',                   aliases: ['cdt', 'potongancdt'] },
+        { key: 'alpha_deduction',             label: 'Alpa',                  aliases: ['alpa', 'alpha', 'potonganalpa'] },
+        { key: 'cashbond_deduction',          label: 'Cashbond',              aliases: ['cashbond', 'potongancashbond'] },
+        { key: 'piutang_obat_deduction',      label: 'Piutang Obat',         aliases: ['piutangobat', 'potonganobat'] },
+        { key: 'salary_correction_deduction', label: 'Koreksi Upah (-)',     aliases: ['koreksiupahmin', 'potongankoreksi', 'koreksi_upah_min'] },
+        { key: 'bank_admin_deduction',        label: 'Adm. Bank',            aliases: ['admbank', 'adm_bank', 'adminbank'] },
+        { key: 'pph21',                       label: 'PPh 21',               aliases: ['pph21', 'pph', 'pajak'] },
+        // BPJS (manual dari template)
+        { key: 'bpjs_kesehatan',              label: 'BPJS Kesehatan (1%)',  aliases: ['bpjskesehatan', 'bpjskes', 'bpjs_kesehatan'] },
+        { key: 'bpjs_ketenagakerjaan',        label: 'BPJS TK JHT (2%)',    aliases: ['bpjsketenagakerjaan', 'bpjstk', 'bpjsjht', 'bpjs_tk_jht', 'bpjstkjht'] },
+        { key: 'bpjs_pensiun_jp',             label: 'BPJS TK JP (1%)',     aliases: ['bpjspensiunjp', 'bpjsjp', 'bpjs_tk_jp', 'bpjstkjp', 'bpjspensiun'] },
     ];
 
     const handleFileSelect = async (e) => {

@@ -141,12 +141,17 @@ class PayrollController extends Controller
             ->get();
 
         $overtimeHours   = $overtimeRequests->sum('total_hours');
-        $overtimeHourly  = $overtimeRequests->where('category', 'jam')->sum('total_pay');
-        $overtimeNight   = $overtimeRequests->where('category', 'malam')->sum('total_pay');
-        $overtimeShift   = $overtimeRequests->where('category', 'shift')->sum('total_pay');
+        $overtimeHourly  = $overtimeRequests->where('category', 'lembur')->sum('total_pay');
+        $overtimeNight   = 0;
+        $overtimeShift   = 0;
         $overtimeOnCall  = $overtimeRequests->where('category', 'on_call')->sum('total_pay');
         $overtimeMod     = $overtimeRequests->where('category', 'mod')->sum('total_pay');
         $overtimeHoliday = $overtimeRequests->where('category', 'hari_raya')->sum('total_pay');
+
+        // Backward compat: include old categories if any exist
+        $overtimeHourly  += $overtimeRequests->where('category', 'jam')->sum('total_pay');
+        $overtimeNight   += $overtimeRequests->where('category', 'malam')->sum('total_pay');
+        $overtimeShift   += $overtimeRequests->where('category', 'shift')->sum('total_pay');
 
         $totalOvertimeOther = $overtimeHourly + $overtimeNight + $overtimeShift
                             + $overtimeOnCall + $overtimeMod + $overtimeHoliday;
@@ -159,10 +164,10 @@ class PayrollController extends Controller
         $totalPendapatan = $grossSalary + $totalOvertimeOther + $salaryCorrection + $otherAllowance;
 
         // === POTONGAN ===
-        // BPJS auto-kalkulasi dari gaji pokok
-        $bpjsKesehatan      = round($baseSalary * 0.01);
-        $bpjsKetenagakerjaan = round($baseSalary * 0.02);
-        $bpjsPensiunJp      = round($baseSalary * 0.01);
+        // BPJS dari import template (manual input), pertahankan dari existing
+        $bpjsKesehatan       = $existing?->bpjs_kesehatan ?? 0;
+        $bpjsKetenagakerjaan = $existing?->bpjs_ketenagakerjaan ?? 0;
+        $bpjsPensiunJp       = $existing?->bpjs_pensiun_jp ?? 0;
 
         // Potongan ketidakhadiran dihilangkan sesuai permintaan
 
