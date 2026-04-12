@@ -9,10 +9,10 @@
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 8px; color: #1a1a2e; }
 
         /* Header - logo beside text, centered */
-        .header { border-bottom: 2px double #0f3460; padding-bottom: 8px; margin-bottom: 5px; margin-top: 10px; padding-top: 8px; }
-        .header-table { width: 100%; }
-        .header-table td { vertical-align: middle; text-align: center; }
-        .header-logo { width: 70px; text-align: right; padding-right: 12px; }
+        .header { border-bottom: 2px double #0f3460; padding-bottom: 8px; margin-bottom: 5px; margin-top: 10px; padding-top: 8px; text-align: center; }
+        .header-table { width: auto; margin: 0 auto; border-collapse: collapse; }
+        .header-table td { vertical-align: middle; }
+        .header-logo { padding-right: 12px; text-align: center; }
         .header-logo img { height: 60px; }
         .header-text { text-align: left; }
         .header-text h1 { font-size: 18px; color: #0f3460; margin-bottom: 3px; letter-spacing: 0.5px; }
