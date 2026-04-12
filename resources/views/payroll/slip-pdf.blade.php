@@ -9,14 +9,14 @@
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 8px; color: #1a1a2e; }
 
         /* Header - logo beside text, centered */
-        .header { border-bottom: 2px double #0f3460; padding-bottom: 5px; margin-bottom: 5px; }
+        .header { border-bottom: 2px double #0f3460; padding-bottom: 8px; margin-bottom: 5px; margin-top: 10px; padding-top: 8px; }
         .header-table { width: 100%; }
         .header-table td { vertical-align: middle; text-align: center; }
-        .header-logo { width: 50px; text-align: right; padding-right: 10px; }
-        .header-logo img { height: 40px; }
+        .header-logo { width: 70px; text-align: right; padding-right: 12px; }
+        .header-logo img { height: 60px; }
         .header-text { text-align: left; }
-        .header-text h1 { font-size: 14px; color: #0f3460; margin-bottom: 1px; letter-spacing: 0.5px; }
-        .header-text p { font-size: 7.5px; color: #333; }
+        .header-text h1 { font-size: 18px; color: #0f3460; margin-bottom: 3px; letter-spacing: 0.5px; }
+        .header-text p { font-size: 9px; color: #333; }
 
         /* Info Karyawan */
         .info-box { width: 100%; border: 1px solid #0f3460; border-collapse: collapse; margin-bottom: 5px; }
@@ -184,14 +184,12 @@
         <div class="sub-section">Lembur</div>
         <table class="detail-table">
             <col class="col-label"><col class="col-rp"><col class="col-amount">
-            <tr><td>Lembur Jam (@10rb/jam)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_hourly ?? 0, 0, ',', '.') }}</td></tr>
-            <tr><td>Lembur Malam (@20rb)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_night ?? 0, 0, ',', '.') }}</td></tr>
-            <tr><td>Lembur Shift (@60rb)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_shift ?? 0, 0, ',', '.') }}</td></tr>
-            <tr><td>Lembur On Call (@50rb)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_on_call ?? 0, 0, ',', '.') }}</td></tr>
-            <tr><td>Lembur Hari Raya (@120rb)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_holiday ?? 0, 0, ',', '.') }}</td></tr>
+            <tr><td>Lembur</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_hourly ?? 0, 0, ',', '.') }}</td></tr>
+            <tr><td>On Call</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_on_call ?? 0, 0, ',', '.') }}</td></tr>
+            <tr><td>MOD</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_mod ?? 0, 0, ',', '.') }}</td></tr>
+            <tr><td>Hari Raya</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->overtime_holiday ?? 0, 0, ',', '.') }}</td></tr>
             @php
-                $totalLembur = ($payroll->overtime_hourly ?? 0) + ($payroll->overtime_night ?? 0)
-                    + ($payroll->overtime_shift ?? 0) + ($payroll->overtime_on_call ?? 0)
+                $totalLembur = ($payroll->overtime_hourly ?? 0) + ($payroll->overtime_on_call ?? 0)
                     + ($payroll->overtime_mod ?? 0) + ($payroll->overtime_holiday ?? 0);
             @endphp
             <tr class="total-row"><td><strong>Total Lembur</strong></td><td class="col-rp"><strong>Rp</strong></td><td class="col-amount"><strong>{{ number_format($totalLembur, 0, ',', '.') }}</strong></td></tr>
@@ -203,8 +201,7 @@
             <tr><td>Lain-lain (+)</td><td class="col-rp">Rp</td><td class="col-amount">{{ number_format($payroll->other_allowance ?? 0, 0, ',', '.') }}</td></tr>
             @php
                 $totalPendapatan = $payroll->gross_salary
-                    + ($payroll->overtime_hourly ?? 0) + ($payroll->overtime_night ?? 0)
-                    + ($payroll->overtime_shift ?? 0) + ($payroll->overtime_on_call ?? 0)
+                    + ($payroll->overtime_hourly ?? 0) + ($payroll->overtime_on_call ?? 0)
                     + ($payroll->overtime_mod ?? 0) + ($payroll->overtime_holiday ?? 0)
                     + ($payroll->salary_correction ?? 0) + ($payroll->other_allowance ?? 0);
             @endphp
@@ -246,25 +243,28 @@
 
     <table class="signatures">
         <tr>
-            <td colspan="2" style="text-align: right; padding-right: 25%; font-size: 8px; padding-bottom: 2px;">
-                Bekasi, {{ now()->format('d') }} {{ $monthName }} {{ $payroll->year }}
-            </td>
-        </tr>
-        <tr>
             <td>
                 Diterima oleh,
                 <div class="sig-space"></div>
                 <span class="sig-name">{{ $payroll->user->name }}</span><br>
                 <span class="sig-title">Karyawan</span>
             </td>
-            <td>
+            <td style="text-align: center;">
+                <div style="font-size: 8px; margin-bottom: 4px;">Bekasi, {{ now()->format('d') }} {{ $monthName }} {{ $payroll->year }}</div>
                 Disetujui oleh,
-                {{-- ==> UBAH UKURAN TANDA TANGAN: ganti height di class .sig-img dan .sig-space pada CSS diatas <== --}}
-                @if(file_exists(public_path('TTD_ADMIN.png')))
-                    <div><img src="{{ public_path('TTD_ADMIN.png') }}" class="sig-img" alt="TTD"></div>
-                @else
-                    <div class="sig-space"></div>
-                @endif
+                @php
+                    $qrText = 'Dokumen ini telah di verifikasi oleh Payroll RS Kartika Husada Setu';
+                    $qrOptions = new \chillerlan\QRCode\QROptions([
+                        'outputInterface' => \chillerlan\QRCode\Output\QRGdImagePNG::class,
+                        'scale' => 5,
+                        'quietzoneSize' => 1,
+                        'outputBase64' => true,
+                    ]);
+                    $qrBase64 = (new \chillerlan\QRCode\QRCode($qrOptions))->render($qrText);
+                @endphp
+                <div style="text-align: center; padding: 5px 0;">
+                    <img src="{{ $qrBase64 }}" style="width: 80px; height: 80px;" alt="QR Verification">
+                </div>
                 <span class="sig-name">Yanuwar Syawaludin, S.I.A.P</span><br>
                 <span class="sig-title">HRD / Admin SDM</span>
             </td>

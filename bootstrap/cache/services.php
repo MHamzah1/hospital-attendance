@@ -34,7 +34,8 @@
     30 => 'Carbon\\Laravel\\ServiceProvider',
     31 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     32 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    33 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
+    33 => 'SimpleSoftwareIO\\QrCode\\QrCodeServiceProvider',
+    34 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
   ),
   'eager' => 
   array (
@@ -55,7 +56,8 @@
     14 => 'Carbon\\Laravel\\ServiceProvider',
     15 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     16 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    17 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
+    17 => 'SimpleSoftwareIO\\QrCode\\QrCodeServiceProvider',
+    18 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
   ),
   'deferred' => 
   array (

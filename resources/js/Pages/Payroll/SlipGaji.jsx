@@ -8,8 +8,7 @@ export default function SlipGaji({ payroll, cutiInfo }) {
     const u = payroll.user;
     const ci = cutiInfo || { jatah_cuti: 12, cuti_terpakai: 0, sisa_cuti: 12 };
 
-    const totalOvertimeOther = Number(p.overtime_hourly || 0) + Number(p.overtime_night || 0)
-        + Number(p.overtime_shift || 0) + Number(p.overtime_on_call || 0)
+    const totalOvertimeOther = Number(p.overtime_hourly || 0) + Number(p.overtime_on_call || 0)
         + Number(p.overtime_mod || 0) + Number(p.overtime_holiday || 0);
     const totalPendapatan = Number(p.gross_salary || 0) + totalOvertimeOther
         + Number(p.salary_correction || 0) + Number(p.other_allowance || 0);
@@ -151,12 +150,10 @@ export default function SlipGaji({ payroll, cutiInfo }) {
 
                             {/* Lembur */}
                             <p className="text-xs font-bold text-slate-500 uppercase mt-3 mb-2 pb-1 border-b border-slate-200">Lembur</p>
-                            <SalaryRow label="Lembur Jam" value={p.overtime_hourly} />
-                            <SalaryRow label="Lembur Malam" value={p.overtime_night} />
-                            <SalaryRow label="Lembur Shift" value={p.overtime_shift} />
-                            <SalaryRow label="Lembur On Call" value={p.overtime_on_call} />
-                            <SalaryRow label="Lembur MOD" value={p.overtime_mod} />
-                            <SalaryRow label="Lembur Hari Raya" value={p.overtime_holiday} />
+                            <SalaryRow label="Lembur" value={p.overtime_hourly} />
+                            <SalaryRow label="On Call" value={p.overtime_on_call} />
+                            <SalaryRow label="MOD" value={p.overtime_mod} />
+                            <SalaryRow label="Hari Raya" value={p.overtime_holiday} />
 
                             {/* Tambahan */}
                             <p className="text-xs font-bold text-slate-500 uppercase mt-3 mb-2 pb-1 border-b border-slate-200">Tambahan Lainnya</p>
