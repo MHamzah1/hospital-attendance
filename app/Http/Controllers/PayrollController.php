@@ -73,18 +73,28 @@ class PayrollController extends Controller
         }
 
         $request->validate([
-            'month' => 'required|integer|min:1|max:12',
-            'year'  => 'required|integer|min:2020|max:2030',
+            'month'     => 'required|integer|min:1|max:12',
+            'year'      => 'required|integer|min:2020|max:2030',
+            'date_from' => 'nullable|date',
+            'date_to'   => 'nullable|date|after_or_equal:date_from',
         ]);
 
         $month = $request->month;
         $year  = $request->year;
 
+        // Date range (default: seluruh bulan)
+        $dateFrom = $request->date_from
+            ? Carbon::parse($request->date_from)
+            : Carbon::create($year, $month, 1);
+        $dateTo = $request->date_to
+            ? Carbon::parse($request->date_to)
+            : Carbon::create($year, $month, 1)->endOfMonth();
+
         $employees = User::where('role', 'karyawan')
             ->where('status', '!=', 'keluar')
             ->get();
 
-        $totalWorkDays = $this->getWorkingDays($month, $year);
+        $totalWorkDays = $this->getWorkingDaysRange($dateFrom, $dateTo);
 
         foreach ($employees as $employee) {
             // Ambil payroll existing sekali saja — dipakai di calculatePayroll
@@ -98,23 +108,26 @@ class PayrollController extends Controller
                 continue;
             }
 
-            $this->calculatePayroll($employee, $month, $year, $totalWorkDays, $existing);
+            $this->calculatePayroll($employee, $month, $year, $totalWorkDays, $existing, $dateFrom, $dateTo);
         }
 
         return back()->with('success', 'Penggajian berhasil di-generate!');
     }
 
-    private function calculatePayroll(User $employee, int $month, int $year, int $totalWorkDays, ?Payroll $existing = null)
+    private function calculatePayroll(User $employee, int $month, int $year, int $totalWorkDays, ?Payroll $existing = null, ?Carbon $dateFrom = null, ?Carbon $dateTo = null)
     {
-        // Data kehadiran
+        // Default date range = seluruh bulan
+        $dateFrom = $dateFrom ?? Carbon::create($year, $month, 1);
+        $dateTo   = $dateTo ?? Carbon::create($year, $month, 1)->endOfMonth();
+
+        // Data kehadiran (berdasarkan rentang tanggal)
         $attendances = Attendance::where('user_id', $employee->id)
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
+            ->whereBetween('date', [$dateFrom->format('Y-m-d'), $dateTo->format('Y-m-d')])
             ->get();
 
         $presentDays = $attendances->whereIn('status', ['present', 'late'])->count();
         $lateDays    = $attendances->where('status', 'late')->count();
-        $leaveDays   = $this->getApprovedLeaveDays($employee->id, $month, $year);
+        $leaveDays   = $this->getApprovedLeaveDaysRange($employee->id, $dateFrom, $dateTo);
         $sickDays    = $attendances->where('status', 'sick')->count();
 
         $absentDays = $totalWorkDays - $presentDays - $leaveDays;
@@ -136,8 +149,7 @@ class PayrollController extends Controller
         // === LEMBUR (dari OvertimeRequest yang approved, per kategori) ===
         $overtimeRequests = OvertimeRequest::where('user_id', $employee->id)
             ->where('status', 'approved')
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
+            ->whereBetween('date', [$dateFrom->format('Y-m-d'), $dateTo->format('Y-m-d')])
             ->get();
 
         $overtimeHours   = $overtimeRequests->sum('total_hours');
@@ -309,6 +321,33 @@ class PayrollController extends Controller
         return back()->with('success', 'Payroll berhasil ditandai sebagai dibayar!');
     }
 
+    public function exportReactPdf(Payroll $payroll, Request $request)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin() && $payroll->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $payroll->load('user');
+
+        $jatahCuti = $payroll->user->jatah_cuti ?? 12;
+        $cutiTerpakai = LeaveRequest::where('user_id', $payroll->user_id)
+            ->where('type', 'cuti_tahunan')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $payroll->year)
+            ->sum('total_days');
+        $sisaCuti = $jatahCuti - $cutiTerpakai;
+
+        return Inertia::render('Payroll/SlipGajiExportPDF', [
+            'payroll' => $payroll,
+            'cutiInfo' => [
+                'jatah_cuti' => $jatahCuti,
+                'cuti_terpakai' => $cutiTerpakai,
+                'sisa_cuti' => $sisaCuti,
+            ],
+        ]);
+    }
+
     public function exportPdf(Payroll $payroll, Request $request)
     {
         $user = $request->user();
@@ -441,6 +480,7 @@ class PayrollController extends Controller
 
         $month  = $request->get('month', Carbon::now()->month);
         $year   = $request->get('year', Carbon::now()->year);
+        $format = $request->get('format', 'xlsx');
         $months = $this->monthNames();
 
         $payrolls = Payroll::with('user')
@@ -448,47 +488,128 @@ class PayrollController extends Controller
             ->where('year', $year)
             ->get();
 
-        $fileName = "Rekap_Gaji_{$months[$month]}_{$year}.csv";
+        if ($format === 'pdf') {
+            return $this->bulkExportPdf($payrolls, $month, $year, $months);
+        }
 
+        // XLSX export using PhpSpreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Rekap Gaji');
+
+        // Title
+        $sheet->setCellValue('A1', "REKAP GAJI KARYAWAN - {$months[$month]} {$year}");
+        $sheet->mergeCells('A1:Z1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Headers
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+            'No', 'NIP', 'Nama', 'Departemen', 'Jabatan',
+            'Hari Kerja', 'Hadir', 'Terlambat', 'Tidak Hadir', 'Cuti', 'Sakit', 'Lembur(Jam)',
+            'Gaji Pokok', 'Tunj. Jabatan', 'Tunj. Fungsional', 'Tunj. Khusus', 'Tunj. Makan', 'Tunj. Transport', 'Tunj. Kehadiran',
+            'BRUTO',
+            'Lembur', 'On Call', 'MOD', 'Hari Raya',
+            'Koreksi Upah (+)', 'Lain-lain (+)',
+            'Total Pendapatan',
+            'BPJS Kes', 'BPJS TK JHT', 'BPJS TK JP', 'PPh21',
+            'CDT', 'Alpa', 'Cashbond', 'Piutang Obat', 'Koreksi Upah (-)', 'Adm. Bank', 'Pot. Lain',
+            'Total Potongan', 'Gaji Bersih', 'Status',
         ];
 
-        $callback = function () use ($payrolls) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '3', $header);
+            $col++;
+        }
 
-            fputcsv($file, [
-                'No', 'ID', 'Nama', 'Departemen', 'Jabatan',
-                'Hari Kerja', 'Hadir', 'Terlambat', 'Tidak Hadir', 'Cuti', 'Sakit', 'Lembur(Jam)',
-                'Gaji Pokok', 'Tunj. Jabatan', 'Tunj. Makan', 'Tunj. Transport', 'Lembur',
-                'Total Pendapatan',
-                'BPJS Kes', 'BPJS TK', 'BPJS Pensiun', 'PPh21', 'Pot. Absensi', 'Pot. Lain',
-                'Total Potongan', 'Gaji Bersih', 'Status',
-            ]);
+        // Style header row
+        $lastCol = chr(ord('A') + count($headers) - 1);
+        if (count($headers) > 26) {
+            $lastCol = 'A' . chr(ord('A') + count($headers) - 27);
+        }
+        $headerRange = "A3:{$lastCol}3";
+        $sheet->getStyle($headerRange)->getFont()->setBold(true);
+        $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('0F3460');
+        $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
 
-            foreach ($payrolls as $i => $p) {
-                fputcsv($file, [
-                    $i + 1, $p->user->employee_id, $p->user->name, $p->user->department, $p->user->position,
-                    $p->total_work_days, $p->present_days, $p->late_days, $p->absent_days, $p->leave_days, $p->sick_days, $p->overtime_hours,
-                    $p->base_salary, $p->position_allowance, $p->meal_allowance, $p->transport_allowance, $p->overtime_pay,
-                    $p->gross_salary,
-                    $p->bpjs_kesehatan, $p->bpjs_ketenagakerjaan, $p->bpjs_pensiun, $p->pph21, $p->absence_deduction, $p->other_deduction,
-                    $p->total_deduction, $p->net_salary, $p->status,
-                ]);
+        // Data rows
+        $row = 4;
+        foreach ($payrolls as $i => $p) {
+            $col = 'A';
+            $values = [
+                $i + 1,
+                $p->user->nip ?? $p->user->employee_id,
+                $p->user->name,
+                $p->user->department,
+                $p->user->position,
+                $p->total_work_days, $p->present_days, $p->late_days, $p->absent_days, $p->leave_days, $p->sick_days, $p->overtime_hours,
+                $p->base_salary, $p->position_allowance, $p->functional_allowance, $p->special_allowance, $p->meal_allowance, $p->transport_allowance, $p->attendance_allowance,
+                $p->gross_salary,
+                $p->overtime_hourly, $p->overtime_on_call, $p->overtime_mod, $p->overtime_holiday,
+                $p->salary_correction, $p->other_allowance,
+                $p->gross_salary + $p->overtime_hourly + $p->overtime_on_call + $p->overtime_mod + $p->overtime_holiday + $p->salary_correction + $p->other_allowance,
+                $p->bpjs_kesehatan, $p->bpjs_ketenagakerjaan, $p->bpjs_pensiun_jp ?? $p->bpjs_pensiun, $p->pph21,
+                $p->cdt_deduction, $p->alpha_deduction, $p->cashbond_deduction, $p->piutang_obat_deduction, $p->salary_correction_deduction, $p->bank_admin_deduction, $p->other_deduction,
+                $p->total_deduction, $p->net_salary, $p->status,
+            ];
+
+            foreach ($values as $value) {
+                $sheet->setCellValue($col . $row, $value);
+                $col++;
             }
+            $row++;
+        }
 
-            fclose($file);
-        };
+        // Auto-size columns
+        foreach (range('A', 'Z') as $c) {
+            $sheet->getColumnDimension($c)->setAutoSize(true);
+        }
+        foreach (range('A', 'O') as $c) {
+            $sheet->getColumnDimension('A' . $c)->setAutoSize(true);
+        }
 
-        return response()->stream($callback, 200, $headers);
+        // Number format for currency columns (M onwards)
+        $currencyRange = "M4:{$lastCol}" . ($row - 1);
+        if ($row > 4) {
+            $sheet->getStyle($currencyRange)->getNumberFormat()->setFormatCode('#,##0');
+        }
+
+        $fileName = "Rekap_Gaji_{$months[$month]}_{$year}.xlsx";
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    private function bulkExportPdf($payrolls, int $month, int $year, array $months)
+    {
+        $pdf = Pdf::loadView('payroll.rekap-pdf', [
+            'payrolls'  => $payrolls,
+            'month'     => $month,
+            'year'      => $year,
+            'monthName' => $months[$month],
+        ]);
+        $pdf->setPaper('a4', 'landscape');
+
+        $fileName = "Rekap_Gaji_{$months[$month]}_{$year}.pdf";
+        return $pdf->download($fileName);
     }
 
     private function getWorkingDays(int $month, int $year): int
     {
-        $start   = Carbon::create($year, $month, 1);
-        $end     = $start->copy()->endOfMonth();
+        return $this->getWorkingDaysRange(
+            Carbon::create($year, $month, 1),
+            Carbon::create($year, $month, 1)->endOfMonth()
+        );
+    }
+
+    private function getWorkingDaysRange(Carbon $start, Carbon $end): int
+    {
         $days    = 0;
         $current = $start->copy();
 
@@ -504,9 +625,15 @@ class PayrollController extends Controller
 
     private function getApprovedLeaveDays(int $userId, int $month, int $year): int
     {
-        $start = Carbon::create($year, $month, 1);
-        $end   = $start->copy()->endOfMonth();
+        return $this->getApprovedLeaveDaysRange(
+            $userId,
+            Carbon::create($year, $month, 1),
+            Carbon::create($year, $month, 1)->endOfMonth()
+        );
+    }
 
+    private function getApprovedLeaveDaysRange(int $userId, Carbon $start, Carbon $end): int
+    {
         return LeaveRequest::where('user_id', $userId)
             ->where('status', 'approved')
             ->where(function ($q) use ($start, $end) {

@@ -1,15 +1,15 @@
-SISTEM INFORMASI KARYAWAN
+	SISTEM INFORMASI KARYAWAN
 
-absensi dibuat ada periode waktunya
-butuh rekapan absensi bisa di export ke excel dan pdf
+(OK)	1. absensi dibuat ada filter periode tanggal dari - tanggal sampai
+(OK)	2. butuh rekapan absensi bisa di export ke excel dan pdf (rekapan tanggal dari - tanggal sampai)
 alpa dan cdt itu perhari dari bruto
 bruto 3.000.000 / 25 (pelayanan) 22 (office) * 1 = 120.000
 
 
-KATEGORI LEMBUR DIBUAT MENJADI 4 KATEGORI
+(OK)	KATEGORI LEMBUR DIBUAT MENJADI 4 KATEGORI
 1. LEMBUR
 2. ON CALL
 3. MOD
 4. HARI RAYA
 
-potongan bpjs di input manual
+(OK) 	potongan bpjs di input manual

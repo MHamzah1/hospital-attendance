@@ -8,6 +8,8 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
     const [year, setYear] = useState(filters.year);
     const [search, setSearch] = useState(filters.search || '');
     const [generating, setGenerating] = useState(false);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
 
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
@@ -17,9 +19,16 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
     };
 
     const handleGenerate = () => {
-        if (confirm(`Generate penggajian untuk ${months[month - 1]} ${year}?`)) {
+        const label = dateFrom && dateTo
+            ? `Generate penggajian ${months[month - 1]} ${year} (tanggal ${dateFrom} s/d ${dateTo})?`
+            : `Generate penggajian untuk ${months[month - 1]} ${year}?`;
+        if (confirm(label)) {
             setGenerating(true);
-            router.post('/payroll/generate', { month, year }, {
+            router.post('/payroll/generate', {
+                month, year,
+                ...(dateFrom ? { date_from: dateFrom } : {}),
+                ...(dateTo ? { date_to: dateTo } : {}),
+            }, {
                 onFinish: () => setGenerating(false),
             });
         }
@@ -62,9 +71,13 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30 disabled:opacity-50">
                         {generating ? 'Generating...' : '⚡ Generate Payroll'}
                     </button>
-                    <a href={`/payroll-bulk-export?month=${month}&year=${year}`}
+                    <a href={`/payroll-bulk-export?month=${month}&year=${year}&format=xlsx`}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
-                        📊 Export Rekap
+                        📊 Export Excel
+                    </a>
+                    <a href={`/payroll-bulk-export?month=${month}&year=${year}&format=pdf`}
+                        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+                        📄 Export PDF
                     </a>
                     <Link href="/payroll-import"
                         className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
@@ -73,11 +86,17 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
                 </div>
             </div>
 
-            {/* Info Message */}
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-                <p className="text-sm text-amber-800">
-                    <strong>⚠️ Wajib import data potongan (Excel) terlebih dahulu</strong>, lalu klik <strong>Generate Payroll</strong> untuk merekap keseluruhan gaji, tunjangan, absensi, lembur, cuti & BPJS secara otomatis.
-                </p>
+            {/* Date range for Generate */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-4 mb-6">
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm font-semibold text-slate-600">Rentang Tanggal Generate:</span>
+                    <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                        className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500" />
+                    <span className="text-sm text-slate-400">s/d</span>
+                    <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                        className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500" />
+                    <span className="text-xs text-slate-400">(Kosongkan untuk seluruh bulan)</span>
+                </div>
             </div>
 
             {/* Summary cards */}

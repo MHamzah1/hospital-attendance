@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/payroll/{payroll}/finalize', [PayrollController::class, 'finalize'])->name('payroll.finalize');
     Route::post('/payroll/{payroll}/mark-paid', [PayrollController::class, 'markPaid'])->name('payroll.markPaid');
     Route::get('/payroll/{payroll}/export-pdf', [PayrollController::class, 'exportPdf'])->name('payroll.exportPdf');
+    Route::get('/payroll/{payroll}/export-react-pdf', [PayrollController::class, 'exportReactPdf'])->name('payroll.exportReactPdf');
     Route::get('/payroll/{payroll}/export-excel', [PayrollController::class, 'exportExcel'])->name('payroll.exportExcel');
     Route::get('/payroll-bulk-export', [PayrollController::class, 'bulkExportExcel'])->name('payroll.bulkExport');
 

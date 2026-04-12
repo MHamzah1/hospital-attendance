@@ -187,7 +187,7 @@ export default function PayrollImport({ flash }) {
                 {step === 1 && (
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-8 space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Import Data Potongan</h2>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Import Data</h2>
                             <p className="text-slate-600">Upload file <strong>DATA PENGGAJIAN.xlsx</strong> untuk import data potongan & koreksi karyawan</p>
                         </div>
 
