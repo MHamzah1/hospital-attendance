@@ -31,6 +31,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockIn');
     Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockOut');
+    Route::get('/attendance/export-excel', [AttendanceController::class, 'exportExcel'])->name('attendance.exportExcel');
+    Route::get('/attendance/export-pdf', [AttendanceController::class, 'exportPdf'])->name('attendance.exportPdf');
 
     // Leave Requests
     Route::get('/leaves', [LeaveController::class, 'index'])->name('leaves.index');

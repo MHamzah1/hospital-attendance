@@ -13,8 +13,8 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
 
-    const [month, setMonth] = useState(filters.month);
-    const [year, setYear] = useState(filters.year);
+    const [dateFrom, setDateFrom] = useState(filters.date_from);
+    const [dateTo, setDateTo] = useState(filters.date_to);
 
     const isLibur = todaySchedule?.shift?.name === 'Libur';
 
@@ -70,7 +70,12 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
     }, [capturedPhoto, cameraMode, stopCamera]);
 
     const filterData = () => {
-        router.get('/attendance', { month, year }, { preserveState: true });
+        router.get('/attendance', { date_from: dateFrom, date_to: dateTo }, { preserveState: true });
+    };
+
+    const buildExportUrl = (type) => {
+        const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
+        return `/attendance/export-${type}?${params.toString()}`;
     };
 
     const statusColors = {
@@ -201,22 +206,51 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                 </div>
             )}
 
-            {/* Filter */}
+            {/* Filter & Export */}
             <div className="bg-white rounded-2xl border border-slate-200/60 p-4 mb-6">
-                <div className="flex flex-wrap items-center gap-3">
-                    <select value={month} onChange={e => setMonth(e.target.value)} className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                        {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
-                            <option key={i} value={i + 1}>{m}</option>
-                        ))}
-                    </select>
-                    <select value={year} onChange={e => setYear(e.target.value)} className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                        {[2024, 2025, 2026].map(y => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
-                    <button onClick={filterData} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500">Dari Tanggal</label>
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={e => setDateFrom(e.target.value)}
+                            className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500">Sampai Tanggal</label>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={e => setDateTo(e.target.value)}
+                            className="rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                    </div>
+                    <button
+                        onClick={filterData}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm4 4a1 1 0 011-1h2a1 1 0 010 2h-2a1 1 0 01-1-1z" /></svg>
                         Filter
                     </button>
+
+                    <div className="flex gap-2 ml-auto">
+                        <a
+                            href={buildExportUrl('excel')}
+                            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            Export Excel
+                        </a>
+                        <a
+                            href={buildExportUrl('pdf')}
+                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                            Export PDF
+                        </a>
+                    </div>
                 </div>
             </div>
 

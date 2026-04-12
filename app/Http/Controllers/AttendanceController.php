@@ -12,16 +12,15 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
-        $user   = $request->user();
-        $month  = $request->get('month', Carbon::now()->month);
-        $year   = $request->get('year', Carbon::now()->year);
-        $search = $request->get('search', '');
-        $status = $request->get('status', '');
+        $user      = $request->user();
+        $dateFrom  = $request->get('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $dateTo    = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+        $search    = $request->get('search', '');
+        $status    = $request->get('status', '');
 
         if ($user->isAdmin()) {
             $query = Attendance::with(['user', 'shift'])
-                ->whereMonth('date', $month)
-                ->whereYear('date', $year);
+                ->whereBetween('date', [$dateFrom, $dateTo]);
 
             // Filter pencarian nama karyawan
             if ($search) {
@@ -40,13 +39,12 @@ class AttendanceController extends Controller
             $attendances = $query
                 ->orderBy('date', 'desc')
                 ->orderBy('clock_in', 'desc')
-                ->paginate(20)
+                ->paginate(25)
                 ->through(fn ($a) => $this->appendPhotoUrls($a));
         } else {
             $query = Attendance::with(['shift'])
                 ->where('user_id', $user->id)
-                ->whereMonth('date', $month)
-                ->whereYear('date', $year);
+                ->whereBetween('date', [$dateFrom, $dateTo]);
 
             if ($status && in_array($status, ['present', 'late', 'absent', 'sick', 'leave'])) {
                 $query->where('status', $status);
@@ -54,7 +52,7 @@ class AttendanceController extends Controller
 
             $attendances = $query
                 ->orderBy('date', 'desc')
-                ->paginate(20)
+                ->paginate(25)
                 ->through(fn ($a) => $this->appendPhotoUrls($a));
         }
 
@@ -81,13 +79,177 @@ class AttendanceController extends Controller
             'todayAttendance'=> $todayAttendance,
             'todaySchedule'  => $todaySchedule,
             'filters'        => [
-                'month'  => (int) $month,
-                'year'   => (int) $year,
-                'search' => $search,
-                'status' => $status,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+                'search'    => $search,
+                'status'    => $status,
             ],
             'userShift' => $user->shift,
         ]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user     = $request->user();
+        $dateFrom = $request->get('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $dateTo   = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+
+        $query = Attendance::with(['user', 'shift'])
+            ->whereBetween('date', [$dateFrom, $dateTo]);
+
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
+
+        $fromLabel = Carbon::parse($dateFrom)->format('d-m-Y');
+        $toLabel   = Carbon::parse($dateTo)->format('d-m-Y');
+        $fileName  = "Rekap_Absensi_{$fromLabel}_sd_{$toLabel}.csv";
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ];
+
+        $statusLabels = [
+            'present' => 'Hadir',
+            'late'    => 'Terlambat',
+            'absent'  => 'Tidak Hadir',
+            'leave'   => 'Cuti',
+            'sick'    => 'Sakit',
+        ];
+
+        $callback = function () use ($attendances, $fromLabel, $toLabel, $user, $statusLabels) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, ['REKAPITULASI ABSENSI KARYAWAN']);
+            fputcsv($file, ['Rumah Sakit Kartika Husada Setu']);
+            fputcsv($file, ['Periode', $fromLabel . ' s/d ' . $toLabel]);
+            fputcsv($file, []);
+
+            if ($user->isAdmin()) {
+                fputcsv($file, ['No', 'Tanggal', 'Hari', 'NIP', 'Nama Karyawan', 'Departemen', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan']);
+            } else {
+                fputcsv($file, ['No', 'Tanggal', 'Hari', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan']);
+            }
+
+            foreach ($attendances as $i => $att) {
+                $date        = Carbon::parse($att->date);
+                $shiftName   = $att->shift?->name ?? '-';
+                $shiftTime   = ($att->shift?->start_time && $att->shift?->end_time)
+                    ? substr($att->shift->start_time, 0, 5) . ' - ' . substr($att->shift->end_time, 0, 5)
+                    : '-';
+                $statusLabel = $statusLabels[$att->status] ?? $att->status;
+                $late        = ($att->status === 'late') ? ($att->late_duration ?? '-') : '-';
+
+                // recalculate late_duration if needed
+                if ($att->status === 'late' && !$att->late_duration) {
+                    $att = $this->appendPhotoUrls($att);
+                    $late = $att->late_duration ?? '-';
+                }
+
+                if ($user->isAdmin()) {
+                    fputcsv($file, [
+                        $i + 1,
+                        $date->format('d/m/Y'),
+                        $date->locale('id')->isoFormat('dddd'),
+                        $att->user?->nip ?? $att->user?->employee_id ?? '-',
+                        $att->user?->name ?? '-',
+                        $att->user?->department ?? '-',
+                        $shiftName,
+                        $shiftTime,
+                        $att->clock_in ?? '-',
+                        $att->clock_out ?? '-',
+                        $statusLabel,
+                        $late,
+                    ]);
+                } else {
+                    fputcsv($file, [
+                        $i + 1,
+                        $date->format('d/m/Y'),
+                        $date->locale('id')->isoFormat('dddd'),
+                        $shiftName,
+                        $shiftTime,
+                        $att->clock_in ?? '-',
+                        $att->clock_out ?? '-',
+                        $statusLabel,
+                        $late,
+                    ]);
+                }
+            }
+
+            fputcsv($file, []);
+            // Summary
+            $total   = $attendances->count();
+            $present = $attendances->where('status', 'present')->count();
+            $late    = $attendances->where('status', 'late')->count();
+            $absent  = $attendances->where('status', 'absent')->count();
+            $leave   = $attendances->where('status', 'leave')->count();
+            $sick    = $attendances->where('status', 'sick')->count();
+
+            fputcsv($file, ['=== RINGKASAN ===']);
+            fputcsv($file, ['Total Absensi',   $total]);
+            fputcsv($file, ['Hadir',           $present]);
+            fputcsv($file, ['Terlambat',       $late]);
+            fputcsv($file, ['Tidak Hadir',     $absent]);
+            fputcsv($file, ['Cuti',            $leave]);
+            fputcsv($file, ['Sakit',           $sick]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user     = $request->user();
+        $dateFrom = $request->get('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $dateTo   = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+
+        $query = Attendance::with(['user', 'shift'])
+            ->whereBetween('date', [$dateFrom, $dateTo]);
+
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
+        $attendances = $attendances->map(fn ($a) => $this->appendPhotoUrls($a));
+
+        $statusLabels = [
+            'present' => 'Hadir',
+            'late'    => 'Terlambat',
+            'absent'  => 'Tidak Hadir',
+            'leave'   => 'Cuti',
+            'sick'    => 'Sakit',
+        ];
+
+        $summary = [
+            'total'   => $attendances->count(),
+            'present' => $attendances->where('status', 'present')->count(),
+            'late'    => $attendances->where('status', 'late')->count(),
+            'absent'  => $attendances->where('status', 'absent')->count(),
+            'leave'   => $attendances->where('status', 'leave')->count(),
+            'sick'    => $attendances->where('status', 'sick')->count(),
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('attendance.rekap-pdf', [
+            'attendances'  => $attendances,
+            'dateFrom'     => Carbon::parse($dateFrom)->format('d F Y'),
+            'dateTo'       => Carbon::parse($dateTo)->format('d F Y'),
+            'isAdmin'      => $user->isAdmin(),
+            'currentUser'  => $user,
+            'statusLabels' => $statusLabels,
+            'summary'      => $summary,
+        ])->setPaper('a4', 'landscape');
+
+        $fromLabel = Carbon::parse($dateFrom)->format('d-m-Y');
+        $toLabel   = Carbon::parse($dateTo)->format('d-m-Y');
+
+        return $pdf->download("Rekap_Absensi_{$fromLabel}_sd_{$toLabel}.pdf");
     }
 
     public function clockIn(Request $request)
