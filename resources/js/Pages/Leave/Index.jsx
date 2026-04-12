@@ -163,7 +163,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units }) {
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Jenis Cuti</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Durasi</th>
-                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Alasan</th>
+                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[300px]">Alasan</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
                                 {isAdmin && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Aksi</th>}
                             </tr>
@@ -181,7 +181,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units }) {
                                             {new Date(leave.start_date).toLocaleDateString('id-ID')} - {new Date(leave.end_date).toLocaleDateString('id-ID')}
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600">{leave.total_days} hari</td>
-                                        <td className="px-6 py-3.5 text-slate-600 max-w-[200px] truncate">{leave.reason}</td>
+                                        <td className="px-6 py-3.5 text-slate-600 min-w-[300px] whitespace-normal break-words">{leave.reason}</td>
                                         <td className="px-6 py-3.5">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[leave.status]}`}>
                                                 {statusLabels[leave.status]}

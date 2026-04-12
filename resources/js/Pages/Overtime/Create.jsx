@@ -2,23 +2,19 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, Link } from '@inertiajs/react';
 
-export default function OvertimeCreate({ categoryRates }) {
-    const CATEGORY_LABELS = {
-        jam:       'Jam',
-        malam:     'Malam',
-        shift:     'Shift',
-        on_call:   'On Call',
-        mod:       'MOD',
-        hari_raya: 'Hari Raya',
-    };
-
-    const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+export default function OvertimeCreate() {
+    const CATEGORIES = [
+        { key: 'lembur',    label: 'Lembur',    icon: '⏰', color: 'bg-blue-50 border-blue-400 text-blue-700' },
+        { key: 'on_call',   label: 'On Call',   icon: '📞', color: 'bg-amber-50 border-amber-400 text-amber-700' },
+        { key: 'mod',       label: 'MOD',       icon: '🏥', color: 'bg-orange-50 border-orange-400 text-orange-700' },
+        { key: 'hari_raya', label: 'Hari Raya', icon: '🎉', color: 'bg-red-50 border-red-400 text-red-700' },
+    ];
 
     const [form, setForm] = useState({
         date: '',
         start_time: '',
         end_time: '',
-        category: 'jam',
+        category: 'lembur',
         reason: '',
     });
     const [errors, setErrors] = useState({});
@@ -75,22 +71,20 @@ export default function OvertimeCreate({ categoryRates }) {
                         {/* Kategori Lembur */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Kategori Lembur</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                            <div className="grid grid-cols-2 gap-3">
+                                {CATEGORIES.map(({ key, label, icon, color }) => (
                                     <button
                                         key={key}
                                         type="button"
                                         onClick={() => setForm({...form, category: key})}
-                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                                        className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 text-sm font-semibold transition-all ${
                                             form.category === key
-                                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                                ? color
+                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                                         }`}
                                     >
+                                        <span className="text-lg">{icon}</span>
                                         <span>{label}</span>
-                                        <span className={`text-xs font-normal mt-0.5 ${form.category === key ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                            {formatRp(categoryRates?.[key] ?? 10000)}/{key === 'jam' ? 'jam' : 'shift'}
-                                        </span>
                                     </button>
                                 ))}
                             </div>

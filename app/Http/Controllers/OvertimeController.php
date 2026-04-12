@@ -70,21 +70,17 @@ class OvertimeController extends Controller
         ]);
     }
 
-    // Tarif default per kategori (Rp)
-    public static array $categoryRates = [
-        'jam'        => 10000,
-        'malam'      => 20000,
-        'shift'      => 80000,
-        'on_call'    => 50000,
-        'mod'        => 100000,
-        'hari_raya'  => 120000,
+    // Kategori lembur (4 kategori, tanpa tarif otomatis — admin yang tentukan)
+    public static array $categories = [
+        'lembur'    => 'Lembur',
+        'on_call'   => 'On Call',
+        'mod'       => 'MOD',
+        'hari_raya' => 'Hari Raya',
     ];
 
     public function create()
     {
-        return Inertia::render('Overtime/Create', [
-            'categoryRates' => self::$categoryRates,
-        ]);
+        return Inertia::render('Overtime/Create');
     }
 
     public function store(Request $request)
@@ -93,7 +89,7 @@ class OvertimeController extends Controller
             'date'       => 'required|date',
             'start_time' => 'required|date_format:H:i',
             'end_time'   => 'required|date_format:H:i',
-            'category'   => 'required|in:jam,malam,shift,on_call,mod,hari_raya',
+            'category'   => 'required|in:lembur,on_call,mod,hari_raya',
             'reason'     => 'required|string|max:500',
         ]);
 
@@ -106,12 +102,6 @@ class OvertimeController extends Controller
         }
 
         $totalHours = round(abs($end->diffInMinutes($start)) / 60, 2);
-        $rate       = self::$categoryRates[$validated['category']] ?? 10000;
-
-        // Jam = per hour × total hours; semua kategori lain = flat rate per shift
-        $totalPay = $validated['category'] === 'jam'
-            ? $totalHours * $rate
-            : $rate;
 
         OvertimeRequest::create([
             'user_id'      => $request->user()->id,
@@ -120,8 +110,8 @@ class OvertimeController extends Controller
             'end_time'     => $validated['end_time'],
             'total_hours'  => $totalHours,
             'category'     => $validated['category'],
-            'rate_per_hour' => $rate,
-            'total_pay'    => $totalPay,
+            'rate_per_hour' => 0,
+            'total_pay'    => 0,
             'reason'       => $validated['reason'],
             'status'       => 'pending',
         ]);
