@@ -25,7 +25,7 @@ export default function GuestLayout({ children }) {
                     <h1 className="text-4xl font-extrabold text-white leading-tight">
                         RS Kartika Husada Setu
                     </h1>
-                    <p className="text-emerald-400 font-medium text-lg mt-2">Sistem Absensi Karyawan</p>
+                    <p className="text-emerald-400 font-medium text-lg mt-2">Sistem Informasi Karyawan</p>
                     <p className="text-slate-400 text-sm mt-6 max-w-sm mx-auto leading-relaxed">
                         Portal absensi dan pengelolaan HR khusus untuk pegawai internal Rumah Sakit Kartika Husada Setu.
                     </p>
@@ -60,7 +60,7 @@ export default function GuestLayout({ children }) {
                         </div>
                         <div className="text-center">
                             <p className="text-xl font-bold text-slate-800">RS Kartika Husada Setu</p>
-                            <p className="text-sm text-emerald-600 font-medium">Sistem Absensi</p>
+                            <p className="text-sm text-emerald-600 font-medium">Sistem Informasi Karyawan</p>
                         </div>
                     </Link>
                 </div>

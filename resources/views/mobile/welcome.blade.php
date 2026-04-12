@@ -124,11 +124,11 @@
         <div class="card">
             <img src="/logo.png" alt="Logo" class="logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: contain; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px;">
             <h1 class="title">Hospital Attendance</h1>
-            <p class="subtitle">Sistem Absensi Rumah Sakit</p>
+            <p class="subtitle">Sistem Informasi Rumah Sakit</p>
             
             <div class="welcome-box">
                 <strong>🎉 Selamat Datang!</strong><br>
-                Aplikasi sistem absensi rumah sakit siap digunakan pada perangkat mobile Anda.
+                Aplikasi sistem informasi rumah sakit siap digunakan pada perangkat mobile Anda.
             </div>
 
             <div class="info-grid">

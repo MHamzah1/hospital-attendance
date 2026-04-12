@@ -106,7 +106,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white leading-tight">RS Kartika Husada Setu</p>
-                            <p className="text-[16px] text-emerald-400/80 font-medium mt-0.5">Sistem Absensi</p>
+                            <p className="text-[12px] text-emerald-400/80 font-medium mt-0.5">Sistem Informasi Karyawan</p>
                         </div>
                         <button
                             onClick={() => setSidebarOpen(false)}

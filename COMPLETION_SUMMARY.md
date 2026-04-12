@@ -2,7 +2,7 @@
 
 ## 📌 OVERVIEW
 
-Sistem Absensi Rumah Sakit telah diupdate dengan semua fitur yang diminta. Implementasi mencakup:
+Sistem Informasi Rumah Sakit telah diupdate dengan semua fitur yang diminta. Implementasi mencakup:
 
 ✅ **7 Menu Utama** (Dashboard, Absensi, Cuti, Lembur, Penggajian, Jadwal Karyawan, Kelola Karyawan)
 ✅ **Sistem Login Baru** (NIP untuk karyawan, "admin" untuk administrator)

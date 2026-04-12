@@ -50,7 +50,7 @@ export default function Welcome({ auth }) {
                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                             </span>
-                            Sistem Absensi Pegawai Terintegrasi
+                            Sistem Informasi Karyawan Terintegrasi
                         </div>
 
                         <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-tight text-white lg:text-7xl">
