@@ -274,12 +274,15 @@ const s = StyleSheet.create({
         marginBottom: 2,
     },
     sigSpace: {
-        height: 45,
+        height: 60,
     },
     sigQr: {
         width: 60,
         height: 60,
         marginVertical: 3,
+    },
+    sigDateOffset: {
+        height: 10,
     },
     sigName: {
         fontFamily: 'Helvetica-Bold',
@@ -303,7 +306,7 @@ const s = StyleSheet.create({
         fontSize: 6,
         color: RED,
         fontStyle: 'italic',
-        marginTop: 4,
+        marginTop: 30,
     },
     footer: {
         textAlign: 'center',
@@ -522,7 +525,10 @@ const SlipGajiPDF = ({ payroll, cutiInfo, qrDataUrl }) => {
                 {/* ══════ SIGNATURES ══════ */}
                 <View style={s.sigContainer}>
                     <View style={s.sigLeft}>
+                        {/* Offset matches the date line height on the right */}
+                        <View style={s.sigDateOffset} />
                         <Text style={s.sigText}>Diterima oleh,</Text>
+                        {/* Space matches QR height on the right */}
                         <View style={s.sigSpace} />
                         <Text style={s.sigName}>{u.name}</Text>
                         <Text style={s.sigTitle}>Karyawan</Text>
