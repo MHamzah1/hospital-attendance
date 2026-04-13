@@ -2,30 +2,31 @@ import React, { useEffect, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
-import RekapLemburPDFEager from '@/Components/RekapLemburPDF';
+import RekapAbsensiPDFEager from '@/Components/RekapAbsensiPDF';
 
-export default function ExportPDF({ overtimes, dateFrom, dateTo, isAdmin }) {
-    const fileName = `Rekap_Lembur_${dateFrom.replace(/\s+/g, '_')}_sd_${dateTo.replace(/\s+/g, '_')}.pdf`;
+export default function ExportPDF({ attendances, dateFrom, dateTo, isAdmin, summary, fileName }) {
+    const pdfFileName = fileName || `Rekap_Absensi_${dateFrom.replace(/\s+/g, '_')}_sd_${dateTo.replace(/\s+/g, '_')}.pdf`;
     const [phase, setPhase] = useState('loading');
     const [errMsg, setErrMsg] = useState('');
 
     useEffect(() => {
         import('@react-pdf/renderer')
-            .then(({ pdf }) => pdf(<RekapLemburPDFEager
-                overtimes={overtimes}
+            .then(({ pdf }) => pdf(<RekapAbsensiPDFEager
+                attendances={attendances}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 isAdmin={isAdmin}
+                summary={summary}
             />).toBlob())
             .then(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = fileName;
+                a.download = pdfFileName;
                 a.click();
                 URL.revokeObjectURL(url);
                 setPhase('done');
-                setTimeout(() => router.visit('/overtimes'), 1500);
+                setTimeout(() => router.visit('/attendance'), 1500);
             })
             .catch(err => {
                 setErrMsg(err.message || 'Terjadi kesalahan.');
@@ -34,7 +35,7 @@ export default function ExportPDF({ overtimes, dateFrom, dateTo, isAdmin }) {
     }, []);
 
     return (
-        <AuthenticatedLayout header="Mengunduh PDF Rekap Lembur">
+        <AuthenticatedLayout header="Mengunduh PDF Rekap Absensi">
             <Head title="Mengunduh PDF" />
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="text-center">
@@ -61,7 +62,7 @@ export default function ExportPDF({ overtimes, dateFrom, dateTo, isAdmin }) {
                             </div>
                             <p className="text-red-700 font-semibold">Gagal memproses PDF</p>
                             <p className="text-slate-400 text-sm mt-2">{errMsg}</p>
-                            <button onClick={() => router.visit('/overtimes')} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors">
+                            <button onClick={() => router.visit('/attendance')} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors">
                                 Kembali
                             </button>
                         </>

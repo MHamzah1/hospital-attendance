@@ -244,14 +244,6 @@ class AttendanceController extends Controller
         $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
         $attendances = $attendances->map(fn ($a) => $this->appendPhotoUrls($a));
 
-        $statusLabels = [
-            'present' => 'Hadir',
-            'late'    => 'Terlambat',
-            'absent'  => 'Tidak Hadir',
-            'leave'   => 'Cuti',
-            'sick'    => 'Sakit',
-        ];
-
         $summary = [
             'total'   => $attendances->count(),
             'present' => $attendances->where('status', 'present')->count(),
@@ -261,20 +253,17 @@ class AttendanceController extends Controller
             'sick'    => $attendances->where('status', 'sick')->count(),
         ];
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('attendance.rekap-pdf', [
-            'attendances'  => $attendances,
-            'dateFrom'     => Carbon::parse($dateFrom)->format('d F Y'),
-            'dateTo'       => Carbon::parse($dateTo)->format('d F Y'),
-            'isAdmin'      => $user->isAdmin(),
-            'currentUser'  => $user,
-            'statusLabels' => $statusLabels,
-            'summary'      => $summary,
-        ])->setPaper('a4', 'landscape');
+        $fromFile = Carbon::parse($dateFrom)->format('d-m-Y');
+        $toFile   = Carbon::parse($dateTo)->format('d-m-Y');
 
-        $fromLabel = Carbon::parse($dateFrom)->format('d-m-Y');
-        $toLabel   = Carbon::parse($dateTo)->format('d-m-Y');
-
-        return $pdf->download("Rekap_Absensi_{$fromLabel}_sd_{$toLabel}.pdf");
+        return Inertia::render('Attendance/ExportPDF', [
+            'attendances' => $attendances,
+            'dateFrom'    => Carbon::parse($dateFrom)->format('d F Y'),
+            'dateTo'      => Carbon::parse($dateTo)->format('d F Y'),
+            'isAdmin'     => $user->isAdmin(),
+            'summary'     => $summary,
+            'fileName'    => "Rekap_Absensi_{$fromFile}_sd_{$toFile}.pdf",
+        ]);
     }
 
     public function clockIn(Request $request)

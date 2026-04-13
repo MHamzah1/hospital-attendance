@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 
 const PRIMARY = '#0f3460';
 const BORDER = '#ccc';
@@ -15,22 +15,26 @@ const s = StyleSheet.create({
         fontSize: 8,
         color: TEXT_DARK,
     },
-    header: {
-        borderBottom: `2px solid ${PRIMARY}`,
-        paddingBottom: 8,
-        marginBottom: 10,
+    kop: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingBottom: 8,
+        borderBottom: `2px solid ${PRIMARY}`,
+        marginBottom: 10,
     },
+    kopLogo: { width: 52, height: 52, marginRight: 12 },
+    kopText: { flexDirection: 'column' },
     hospitalName: {
         fontSize: 14,
         fontFamily: 'Helvetica-Bold',
         color: PRIMARY,
-        letterSpacing: 0.5,
-        marginBottom: 2,
+        letterSpacing: 0.3,
     },
     hospitalAddr: {
         fontSize: 7,
         color: '#555',
+        marginTop: 2,
     },
     title: {
         fontSize: 12,
@@ -152,10 +156,13 @@ export default function RekapLemburPDF({ overtimes, dateFrom, dateTo, isAdmin })
     return (
         <Document>
             <Page size="A4" orientation="landscape" style={s.page}>
-                {/* Header */}
-                <View style={s.header}>
-                    <Text style={s.hospitalName}>RS KARTIKA HUSADA SETU</Text>
-                    <Text style={s.hospitalAddr}>Jl. Raya Setu No.1, Setu, Bekasi</Text>
+                {/* Kop Surat */}
+                <View style={s.kop}>
+                    <Image style={s.kopLogo} src="/logo.png" />
+                    <View style={s.kopText}>
+                        <Text style={s.hospitalName}>RUMAH SAKIT KARTIKA HUSADA SETU</Text>
+                        <Text style={s.hospitalAddr}>Jl. MT. Haryono, Burangkeng, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320  |  Telp: (021) 1234567</Text>
+                    </View>
                 </View>
 
                 <Text style={s.title}>REKAP PENGAJUAN LEMBUR</Text>
