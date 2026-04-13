@@ -205,13 +205,13 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                         </div>
                     )}
                     <div className="flex items-end ml-auto">
-                        <a
+                        <Link
                             href={`/overtimes/export-pdf?date_from=${filters.date_from || ''}&date_to=${filters.date_to || ''}`}
                             className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                             Export PDF
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -242,10 +242,10 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                                     <tr key={ot.id} className="hover:bg-slate-50/50 transition-colors">
                                         {isApprover && <td className="px-6 py-3.5 font-medium text-slate-700">{ot.user?.name}</td>}
                                         {isApprover && <td className="px-6 py-3.5 text-slate-600">{ot.user?.unit_model?.name || ot.user?.unit || '-'}</td>}
-                                        <td className="px-6 py-3.5 text-slate-600">
+                                        <td className="px-6 py-3.5 text-slate-600 whitespace-nowrap">
                                             {new Date(ot.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
-                                        <td className="px-6 py-3.5 text-slate-600 font-mono text-xs">{ot.start_time} - {ot.end_time}</td>
+                                        <td className="px-6 py-3.5 text-slate-600 font-mono text-xs whitespace-nowrap">{ot.start_time} - {ot.end_time}</td>
                                         <td className="px-6 py-3.5 text-slate-700 font-semibold">{Math.abs(ot.total_hours)} jam</td>
                                         <td className="px-6 py-3.5">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${CATEGORY_COLORS[ot.category] ?? 'bg-slate-100 text-slate-700'}`}>

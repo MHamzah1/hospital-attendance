@@ -276,25 +276,14 @@ class OvertimeController extends Controller
 
         $overtimes = $query->orderBy('date', 'asc')->get();
 
-        $statusLabels = ['pending' => 'Pending', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
-        $categoryLabels = self::$categories;
-
         $fromLabel = $dateFrom ? Carbon::parse($dateFrom)->format('d F Y') : '-';
         $toLabel = $dateTo ? Carbon::parse($dateTo)->format('d F Y') : '-';
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('overtime.rekap-pdf', [
+        return Inertia::render('Overtime/ExportPDF', [
             'overtimes' => $overtimes,
             'dateFrom' => $fromLabel,
             'dateTo' => $toLabel,
             'isAdmin' => $user->isAdmin(),
-            'currentUser' => $user,
-            'statusLabels' => $statusLabels,
-            'categoryLabels' => $categoryLabels,
-        ])->setPaper('a4', 'landscape');
-
-        $from = $dateFrom ? Carbon::parse($dateFrom)->format('d-m-Y') : 'awal';
-        $to = $dateTo ? Carbon::parse($dateTo)->format('d-m-Y') : 'akhir';
-
-        return $pdf->download("Rekap_Lembur_{$from}_sd_{$to}.pdf");
+        ]);
     }
 }

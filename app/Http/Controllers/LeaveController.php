@@ -284,25 +284,17 @@ class LeaveController extends Controller
 
         $leaves = $query->orderBy('start_date', 'asc')->get();
 
-        $statusLabels = ['pending' => 'Pending', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
         $typeLabels = LeaveRequest::typeLabels();
 
         $fromLabel = $dateFrom ? Carbon::parse($dateFrom)->format('d F Y') : '-';
         $toLabel = $dateTo ? Carbon::parse($dateTo)->format('d F Y') : '-';
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('leave.rekap-pdf', [
+        return Inertia::render('Leave/ExportPDF', [
             'leaves' => $leaves,
             'dateFrom' => $fromLabel,
             'dateTo' => $toLabel,
             'isAdmin' => $user->isAdmin(),
-            'currentUser' => $user,
-            'statusLabels' => $statusLabels,
             'typeLabels' => $typeLabels,
-        ])->setPaper('a4', 'landscape');
-
-        $from = $dateFrom ? Carbon::parse($dateFrom)->format('d-m-Y') : 'awal';
-        $to = $dateTo ? Carbon::parse($dateTo)->format('d-m-Y') : 'akhir';
-
-        return $pdf->download("Rekap_Cuti_{$from}_sd_{$to}.pdf");
+        ]);
     }
 }
