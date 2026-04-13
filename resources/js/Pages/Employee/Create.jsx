@@ -1,7 +1,31 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link } from '@inertiajs/react';
 
-export default function EmployeeCreate() {
+function InputField({ label, name, type = 'text', required = false, placeholder = '', prefix = '', hint = '', data, setData, errors }) {
+    return (
+        <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                {label} {required && <span className="text-red-400">*</span>}
+            </label>
+            <div className="relative">
+                {prefix && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{prefix}</span>
+                )}
+                <input
+                    type={type}
+                    value={data[name]}
+                    onChange={e => setData(name, e.target.value)}
+                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${prefix ? 'pl-10' : ''} ${errors[name] ? 'border-red-300' : ''}`}
+                    placeholder={placeholder}
+                />
+            </div>
+            {hint && <p className="text-slate-400 text-xs mt-1">{hint}</p>}
+            {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
+        </div>
+    );
+}
+
+export default function EmployeeCreate({ departments, units }) {
     const { data, setData, post, processing, errors } = useForm({
         // Informasi Dasar
         nip: '',
@@ -17,8 +41,11 @@ export default function EmployeeCreate() {
         address: '',
         city: '',
         department: '',
+        department_id: '',
         unit: '',
+        unit_id: '',
         position: '',
+        approval_role: 'staf',
         join_date: '',
         status: 'active',
         jatah_cuti: 12,
@@ -40,38 +67,12 @@ export default function EmployeeCreate() {
         bank_account: '',
     });
 
-    const departments = [
-        'Rawat Inap', 'Rawat Jalan', 'IGD', 'Poliklinik', 'Farmasi',
-        'Laboratorium', 'Radiologi', 'Administrasi', 'Keuangan', 'IT',
-        'Kebersihan', 'Keamanan', 'Gizi', 'Rekam Medis', 'CSSD',
-    ];
+    const filteredUnits = units?.filter(u => u.department_id == data.department_id) || [];
 
     const submit = (e) => {
         e.preventDefault();
         post(route('employees.store'));
     };
-
-    const InputField = ({ label, name, type = 'text', required = false, placeholder = '', prefix = '', hint = '' }) => (
-        <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                {label} {required && <span className="text-red-400">*</span>}
-            </label>
-            <div className="relative">
-                {prefix && (
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{prefix}</span>
-                )}
-                <input
-                    type={type}
-                    value={data[name]}
-                    onChange={e => setData(name, e.target.value)}
-                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${prefix ? 'pl-10' : ''} ${errors[name] ? 'border-red-300' : ''}`}
-                    placeholder={placeholder}
-                />
-            </div>
-            {hint && <p className="text-slate-400 text-xs mt-1">{hint}</p>}
-            {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
-        </div>
-    );
 
     return (
         <AuthenticatedLayout header="Tambah Karyawan">
@@ -100,9 +101,9 @@ export default function EmployeeCreate() {
                             Informasi Dasar
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InputField label="NIP" name="nip" required placeholder="2021C171" />
-                            <InputField label="Nama Lengkap" name="name" required placeholder="dr. Jati Sarasanti" />
-                            <InputField label="Password" name="password" type="password" required placeholder="Minimal 8 karakter" hint="Kosongkan untuk generate otomatis dari NIP" />
+                            <InputField data={data} setData={setData} errors={errors} label="NIP" name="nip" required placeholder="2021C171" />
+                            <InputField data={data} setData={setData} errors={errors} label="Nama Lengkap" name="name" required placeholder="dr. Jati Sarasanti" />
+                            <InputField data={data} setData={setData} errors={errors} label="Password" name="password" type="password" required placeholder="Minimal 8 karakter" hint="Kosongkan untuk generate otomatis dari NIP" />
                             
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -118,9 +119,9 @@ export default function EmployeeCreate() {
                                     <option value="P">Perempuan</option>
                                 </select>
                             </div>
-                            <InputField label="Pendidikan" name="education" placeholder="S1, D3, SMA, dll" />
-                            <InputField label="Tempat Lahir" name="birth_place" placeholder="Jakarta" />
-                            <InputField label="Tanggal Lahir" name="birth_date" type="date" />
+                            <InputField data={data} setData={setData} errors={errors} label="Pendidikan" name="education" placeholder="S1, D3, SMA, dll" />
+                            <InputField data={data} setData={setData} errors={errors} label="Tempat Lahir" name="birth_place" placeholder="Jakarta" />
+                            <InputField data={data} setData={setData} errors={errors} label="Tanggal Lahir" name="birth_date" type="date" />
                         </div>
                     </div>
 
@@ -133,29 +134,61 @@ export default function EmployeeCreate() {
                             Informasi Kontak & Pekerjaan
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InputField label="No. Telepon" name="phone" placeholder="08xxxxxxxxxx" />
-                            <InputField label="Kota" name="city" placeholder="Jakarta" />
+                            <InputField data={data} setData={setData} errors={errors} label="No. Telepon" name="phone" placeholder="08xxxxxxxxxx" />
+                            <InputField data={data} setData={setData} errors={errors} label="Kota" name="city" placeholder="Jakarta" />
                             
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Departemen <span className="text-red-400">*</span>
                                 </label>
                                 <select
-                                    value={data.department}
-                                    onChange={e => setData('department', e.target.value)}
-                                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${errors.department ? 'border-red-300' : ''}`}
+                                    value={data.department_id}
+                                    onChange={e => { setData(d => ({ ...d, department_id: e.target.value, unit_id: '' })); }}
+                                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${errors.department_id ? 'border-red-300' : ''}`}
                                 >
                                     <option value="">Pilih Departemen</option>
-                                    {departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
+                                    {departments?.map(dept => (
+                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
                                     ))}
                                 </select>
-                                {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
+                                {errors.department_id && <p className="text-red-500 text-xs mt-1">{errors.department_id}</p>}
                             </div>
-                            <InputField label="Unit" name="unit" placeholder="ICU, Rawat Inap Lantai 2, dll" />
-                            <InputField label="Jabatan" name="position" required placeholder="Dokter, Perawat, dll" />
-                            <InputField label="Tanggal Bergabung" name="join_date" type="date" required />
-                            <InputField label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" placeholder="12" hint="Default 12 hari per tahun" />
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Unit
+                                </label>
+                                <select
+                                    value={data.unit_id}
+                                    onChange={e => setData('unit_id', e.target.value)}
+                                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${errors.unit_id ? 'border-red-300' : ''}`}
+                                    disabled={!data.department_id}
+                                >
+                                    <option value="">Pilih Unit</option>
+                                    {filteredUnits.map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                                {errors.unit_id && <p className="text-red-500 text-xs mt-1">{errors.unit_id}</p>}
+                            </div>
+                            <InputField data={data} setData={setData} errors={errors} label="Jabatan" name="position" required placeholder="Dokter, Perawat, dll" />
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Hak Akses Approval
+                                </label>
+                                <select
+                                    value={data.approval_role}
+                                    onChange={e => setData('approval_role', e.target.value)}
+                                    className="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
+                                >
+                                    <option value="staf">Staf (Tidak bisa approve)</option>
+                                    <option value="koordinator">Koordinator (Approve level 1)</option>
+                                    <option value="manajer">Manajer (Approve level 2)</option>
+                                    <option value="direktur">Direktur (Langsung ke Admin)</option>
+                                </select>
+                                <p className="text-slate-400 text-xs mt-1">Tentukan hak approval untuk pengajuan cuti & lembur di unit yang sama</p>
+                            </div>
+                            <InputField data={data} setData={setData} errors={errors} label="Tanggal Bergabung" name="join_date" type="date" required />
+                            <InputField data={data} setData={setData} errors={errors} label="Jatah Cuti (hari/tahun)" name="jatah_cuti" type="number" placeholder="12" hint="Default 12 hari per tahun" />
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
                                 <select
@@ -196,7 +229,7 @@ export default function EmployeeCreate() {
                                     Gaji Pokok
                                 </label>
                                 <div className="grid grid-cols-1 gap-4">
-                                    <InputField label="Gaji Pokok" name="base_salary" type="number" required placeholder="5000000" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="Gaji Pokok" name="base_salary" type="number" required placeholder="5000000" prefix="Rp" />
                                 </div>
                             </div>
                             
@@ -206,12 +239,12 @@ export default function EmployeeCreate() {
                                     Tunjangan (6 Jenis)
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <InputField label="1. Tunjangan Jabatan" name="position_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="2. Tunjangan Fungsional" name="functional_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="3. Tunjangan Khusus" name="special_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="4. Tunjangan Makan (per bulan)" name="meal_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="5. Tunjangan Transport (per bulan)" name="transport_allowance" type="number" placeholder="0" prefix="Rp" />
-                                    <InputField label="6. Tunjangan Kehadiran" name="attendance_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="1. Tunjangan Jabatan" name="position_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="2. Tunjangan Fungsional" name="functional_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="3. Tunjangan Khusus" name="special_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="4. Tunjangan Makan (per bulan)" name="meal_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="5. Tunjangan Transport (per bulan)" name="transport_allowance" type="number" placeholder="0" prefix="Rp" />
+                                    <InputField data={data} setData={setData} errors={errors} label="6. Tunjangan Kehadiran" name="attendance_allowance" type="number" placeholder="0" prefix="Rp" />
                                 </div>
                             </div>
                         </div>
@@ -231,9 +264,9 @@ export default function EmployeeCreate() {
                                     Dokumen & Asuransi
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <InputField label="NPWP" name="npwp" placeholder="XX.XXX.XXX.X-XXX.XXX" />
-                                    <InputField label="No. BPJS Kesehatan" name="bpjs_kesehatan" placeholder="000xxxxxxxxx" />
-                                    <InputField label="No. BPJS Ketenagakerjaan" name="bpjs_ketenagakerjaan" placeholder="000xxxxxxxxx" />
+                                    <InputField data={data} setData={setData} errors={errors} label="NPWP" name="npwp" placeholder="XX.XXX.XXX.X-XXX.XXX" />
+                                    <InputField data={data} setData={setData} errors={errors} label="No. BPJS Kesehatan" name="bpjs_kesehatan" placeholder="000xxxxxxxxx" />
+                                    <InputField data={data} setData={setData} errors={errors} label="No. BPJS Ketenagakerjaan" name="bpjs_ketenagakerjaan" placeholder="000xxxxxxxxx" />
                                 </div>
                             </div>
                             
@@ -242,8 +275,8 @@ export default function EmployeeCreate() {
                                     Data Rekening Bank
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <InputField label="Nama Bank" name="bank_name" placeholder="BCA, Mandiri, dll" />
-                                    <InputField label="Nomor Rekening" name="bank_account" placeholder="0123456789" />
+                                    <InputField data={data} setData={setData} errors={errors} label="Nama Bank" name="bank_name" placeholder="BCA, Mandiri, dll" />
+                                    <InputField data={data} setData={setData} errors={errors} label="Nomor Rekening" name="bank_account" placeholder="0123456789" />
                                 </div>
                             </div>
                         </div>

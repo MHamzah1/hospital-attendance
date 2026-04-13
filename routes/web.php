@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BulkImportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OvertimeController;
@@ -98,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/schedules/{month}/{year}', [UserScheduleController::class, 'listAllSchedules'])->name('schedules.list');
         Route::post('/schedules/bulk', [UserScheduleController::class, 'bulkUpdateSchedules'])->name('schedules.bulk-update');
         Route::get('/schedules/{user}/history', [UserScheduleController::class, 'getHistory'])->name('schedules.history');
+
+        // Department & Unit Management
+        Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::put('/departments/units/{unit}/manager', [DepartmentController::class, 'updateManager'])->name('departments.updateManager');
     });
 });
 

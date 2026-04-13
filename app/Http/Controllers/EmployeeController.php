@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +20,7 @@ class EmployeeController extends Controller
         $department = $request->get('department', 'all');
         $unit       = $request->get('unit', 'all');
 
-        $query = User::where('role', 'karyawan');
+        $query = User::with('departmentModel', 'unitModel')->where('role', 'karyawan');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -29,25 +31,17 @@ class EmployeeController extends Controller
         }
 
         if ($department !== 'all') {
-            $query->where('department', $department);
+            $query->where('department_id', $department);
         }
 
         if ($unit !== 'all') {
-            $query->where('unit', $unit);
+            $query->where('unit_id', $unit);
         }
 
         $employees = $query->latest()->paginate(15);
 
-        $departments = User::where('role', 'karyawan')
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        $units = User::where('role', 'karyawan')
-            ->whereNotNull('unit')
-            ->where('unit', '!=', '')
-            ->distinct()
-            ->pluck('unit');
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
 
         $activeCount   = User::where('role', 'karyawan')->where('status', 'active')->count();
         $inactiveCount = User::where('role', 'karyawan')->where('status', '!=', 'active')->count();
@@ -64,7 +58,13 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        return Inertia::render('Employee/Create');
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
+
+        return Inertia::render('Employee/Create', [
+            'departments' => $departments,
+            'units' => $units,
+        ]);
     }
 
     public function store(Request $request)
@@ -83,9 +83,12 @@ class EmployeeController extends Controller
             'phone'                   => 'nullable|string',
             'address'                 => 'nullable|string',
             'city'                    => 'nullable|string',
-            'department'              => 'required|string',
+            'department'              => 'nullable|string',
+            'department_id'           => 'required|exists:departments,id',
+            'unit_id'                 => 'nullable|exists:units,id',
             'unit'                    => 'nullable|string',
             'position'                => 'required|string',
+            'approval_role'           => 'nullable|in:staf,koordinator,manajer,direktur',
             'join_date'               => 'required|date',
             'status'                  => 'nullable|in:active,inactive',
             'jatah_cuti'              => 'nullable|integer|min:0',
@@ -111,6 +114,7 @@ class EmployeeController extends Controller
         $validated['role']     = 'karyawan';
         $validated['status']   = $validated['status'] ?? 'active';
         $validated['jatah_cuti'] = $validated['jatah_cuti'] ?? 12;
+        $validated['approval_role'] = $validated['approval_role'] ?? 'staf';
 
         User::create($validated);
 
@@ -119,8 +123,13 @@ class EmployeeController extends Controller
 
     public function edit(User $employee)
     {
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
+
         return Inertia::render('Employee/Edit', [
-            'employee' => $employee,
+            'employee' => $employee->load('departmentModel', 'unitModel'),
+            'departments' => $departments,
+            'units' => $units,
         ]);
     }
 
@@ -130,7 +139,7 @@ class EmployeeController extends Controller
             // Informasi Dasar
             'nip'                  => 'required|string|unique:users,nip,' . $employee->id,
             'name'                 => 'required|string|max:255',
-            'password'             => 'nullable|' . Rules\Password::defaults(),
+            'password'             => ['nullable', Rules\Password::defaults()],
             'gender'               => 'nullable|string|in:L,P',
             'education'            => 'nullable|string',
             'birth_place'          => 'nullable|string',
@@ -140,9 +149,12 @@ class EmployeeController extends Controller
             'phone'                => 'nullable|string',
             'address'              => 'nullable|string',
             'city'                 => 'nullable|string',
-            'department'           => 'required|string',
+            'department'           => 'nullable|string',
+            'department_id'        => 'required|exists:departments,id',
+            'unit_id'              => 'nullable|exists:units,id',
             'unit'                 => 'nullable|string',
             'position'             => 'required|string',
+            'approval_role'        => 'nullable|in:staf,koordinator,manajer,direktur',
             'join_date'            => 'required|date',
             'status'               => 'required|in:active,inactive',
             'jatah_cuti'           => 'nullable|integer|min:0',
@@ -167,6 +179,8 @@ class EmployeeController extends Controller
         if ($request->filled('password')) {
             $request->validate(['password' => Rules\Password::defaults()]);
             $validated['password'] = Hash::make($request->password);
+        } else {
+            unset($validated['password']);
         }
 
         $employee->update($validated);

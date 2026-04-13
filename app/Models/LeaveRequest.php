@@ -11,7 +11,10 @@ class LeaveRequest extends Model
 
     protected $fillable = [
         'user_id', 'type', 'start_date', 'end_date', 'total_days',
-        'reason', 'attachment', 'status', 'approved_by', 'approved_at', 'admin_notes',
+        'reason', 'attachment', 'status', 'current_approval_level',
+        'coordinator_approved_by', 'coordinator_approved_at', 'coordinator_notes',
+        'manager_approved_by', 'manager_approved_at', 'manager_notes',
+        'approved_by', 'approved_at', 'admin_notes',
     ];
 
     protected function casts(): array
@@ -20,6 +23,8 @@ class LeaveRequest extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'approved_at' => 'datetime',
+            'coordinator_approved_at' => 'datetime',
+            'manager_approved_at' => 'datetime',
         ];
     }
 
@@ -31,6 +36,16 @@ class LeaveRequest extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function coordinatorApprover()
+    {
+        return $this->belongsTo(User::class, 'coordinator_approved_by');
+    }
+
+    public function managerApprover()
+    {
+        return $this->belongsTo(User::class, 'manager_approved_by');
     }
 
     public static function typeLabels(): array

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\OvertimeRequest;
+use App\Models\Unit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,11 +18,43 @@ class OvertimeController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $search = $request->get('search', '');
-        $unit = $request->get('unit', 'all');
+        $unitFilter = $request->get('unit', 'all');
+        $deptFilter = $request->get('department', 'all');
 
-        $query = $user->isAdmin()
-            ? OvertimeRequest::with('user', 'approver')
-            : OvertimeRequest::where('user_id', $user->id)->with('approver');
+        $query = OvertimeRequest::with([
+            'user.departmentModel', 'user.unitModel',
+            'approver', 'coordinatorApprover', 'managerApprover',
+        ]);
+
+        if ($user->isAdmin()) {
+            $query->where(function ($q) {
+                $q->where('current_approval_level', 3)
+                  ->orWhereIn('status', ['approved', 'rejected']);
+            });
+        } elseif ($user->isManajer()) {
+            $managedUnitIds = $user->managedUnits()->pluck('id');
+            $query->where(function ($q) use ($user, $managedUnitIds) {
+                $q->where(function ($sub) use ($managedUnitIds) {
+                    $sub->where('current_approval_level', 2)
+                        ->where('status', 'pending')
+                        ->whereHas('user', function ($uq) use ($managedUnitIds) {
+                            $uq->whereIn('unit_id', $managedUnitIds);
+                        });
+                })->orWhere('manager_approved_by', $user->id);
+            });
+        } elseif ($user->isKoordinator()) {
+            $query->where(function ($q) use ($user) {
+                $q->where(function ($sub) use ($user) {
+                    $sub->where('current_approval_level', 1)
+                        ->where('status', 'pending')
+                        ->whereHas('user', function ($uq) use ($user) {
+                            $uq->where('unit_id', $user->unit_id);
+                        });
+                })->orWhere('coordinator_approved_by', $user->id);
+            });
+        } else {
+            $query->where('user_id', $user->id);
+        }
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -34,7 +68,7 @@ class OvertimeController extends Controller
             $query->where('date', '<=', $dateTo);
         }
 
-        if ($search && $user->isAdmin()) {
+        if ($search && $user->isApprover()) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('user', function ($uq) use ($search) {
                     $uq->where('name', 'like', "%{$search}%")
@@ -43,19 +77,22 @@ class OvertimeController extends Controller
             });
         }
 
-        if ($unit !== 'all' && $user->isAdmin()) {
-            $query->whereHas('user', function ($q) use ($unit) {
-                $q->where('unit', $unit);
+        if ($unitFilter !== 'all' && $user->isApprover()) {
+            $query->whereHas('user', function ($q) use ($unitFilter) {
+                $q->where('unit_id', $unitFilter);
+            });
+        }
+
+        if ($deptFilter !== 'all' && $user->isAdmin()) {
+            $query->whereHas('user', function ($q) use ($deptFilter) {
+                $q->where('department_id', $deptFilter);
             });
         }
 
         $overtimes = $query->latest()->paginate(15)->withQueryString();
 
-        $units = \App\Models\User::where('role', 'karyawan')
-            ->whereNotNull('unit')
-            ->where('unit', '!=', '')
-            ->distinct()
-            ->pluck('unit');
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
 
         return Inertia::render('Overtime/Index', [
             'overtimes' => $overtimes,
@@ -64,13 +101,14 @@ class OvertimeController extends Controller
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
                 'search' => $search,
-                'unit' => $unit,
+                'unit' => $unitFilter,
+                'department' => $deptFilter,
             ],
+            'departments' => $departments,
             'units' => $units,
         ]);
     }
 
-    // Kategori lembur (4 kategori, tanpa tarif otomatis — admin yang tentukan)
     public static array $categories = [
         'lembur'    => 'Lembur',
         'on_call'   => 'On Call',
@@ -96,7 +134,6 @@ class OvertimeController extends Controller
         $start = Carbon::parse($validated['date'] . ' ' . $validated['start_time']);
         $end   = Carbon::parse($validated['date'] . ' ' . $validated['end_time']);
 
-        // Handle overnight shifts (end time < start time)
         if ($end->lessThanOrEqualTo($start)) {
             $end->addDay();
         }
@@ -114,6 +151,7 @@ class OvertimeController extends Controller
             'total_pay'    => 0,
             'reason'       => $validated['reason'],
             'status'       => 'pending',
+            'current_approval_level' => $request->user()->getInitialApprovalLevel(),
         ]);
 
         return redirect()->route('overtimes.index')->with('success', 'Pengajuan lembur berhasil dikirim!');
@@ -121,47 +159,99 @@ class OvertimeController extends Controller
 
     public function approve(Request $request, OvertimeRequest $overtime)
     {
-        if (!$request->user()->isAdmin()) {
-            abort(403);
+        $user = $request->user();
+        $requester = $overtime->user;
+
+        if ($user->isKoordinator() && $overtime->current_approval_level === 1 && $user->unit_id === $requester->unit_id) {
+            $overtime->update([
+                'coordinator_approved_by' => $user->id,
+                'coordinator_approved_at' => now(),
+                'coordinator_notes' => $request->admin_notes,
+                'current_approval_level' => 2,
+            ]);
+            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Koordinator. Menunggu persetujuan Manajer.');
         }
 
-        $request->validate([
-            'total_pay' => 'nullable|numeric|min:0',
-        ]);
-
-        $updateData = [
-            'status'      => 'approved',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-            'admin_notes' => $request->admin_notes,
-        ];
-
-        if ($request->filled('total_pay')) {
-            $updateData['total_pay'] = $request->total_pay;
+        if ($user->isManajer() && $overtime->current_approval_level === 2) {
+            $managedUnitIds = $user->managedUnits()->pluck('id')->toArray();
+            if (!in_array($requester->unit_id, $managedUnitIds)) {
+                abort(403, 'Anda tidak mengelola unit karyawan ini.');
+            }
+            $overtime->update([
+                'manager_approved_by' => $user->id,
+                'manager_approved_at' => now(),
+                'manager_notes' => $request->admin_notes,
+                'current_approval_level' => 3,
+            ]);
+            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Manajer. Menunggu persetujuan Admin.');
         }
 
-        $overtime->update($updateData);
+        if ($user->isAdmin() && $overtime->current_approval_level === 3) {
+            $request->validate([
+                'total_pay' => 'nullable|numeric|min:0',
+            ]);
 
-        return back()->with('success', 'Lembur berhasil disetujui!');
+            $updateData = [
+                'status'      => 'approved',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'admin_notes' => $request->admin_notes,
+            ];
+
+            if ($request->filled('total_pay')) {
+                $updateData['total_pay'] = $request->total_pay;
+            }
+
+            $overtime->update($updateData);
+            return back()->with('success', 'Lembur berhasil disetujui!');
+        }
+
+        abort(403, 'Anda tidak memiliki hak untuk menyetujui pengajuan ini.');
     }
 
     public function reject(Request $request, OvertimeRequest $overtime)
     {
-        if (!$request->user()->isAdmin()) {
-            abort(403);
-        }
+        $user = $request->user();
+        $requester = $overtime->user;
 
         $request->validate([
             'admin_notes' => 'required|string|max:500',
         ]);
 
-        $overtime->update([
-            'status' => 'rejected',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-            'admin_notes' => $request->admin_notes,
-        ]);
+        if ($user->isKoordinator() && $overtime->current_approval_level === 1 && $user->unit_id === $requester->unit_id) {
+            $overtime->update([
+                'status' => 'rejected',
+                'coordinator_approved_by' => $user->id,
+                'coordinator_approved_at' => now(),
+                'coordinator_notes' => $request->admin_notes,
+            ]);
+            return back()->with('success', 'Pengajuan lembur ditolak oleh Koordinator.');
+        }
 
-        return back()->with('success', 'Lembur berhasil ditolak!');
+        if ($user->isManajer() && $overtime->current_approval_level === 2) {
+            $managedUnitIds = $user->managedUnits()->pluck('id')->toArray();
+            if (!in_array($requester->unit_id, $managedUnitIds)) {
+                abort(403, 'Anda tidak mengelola unit karyawan ini.');
+            }
+            $overtime->update([
+                'status' => 'rejected',
+                'manager_approved_by' => $user->id,
+                'manager_approved_at' => now(),
+                'manager_notes' => $request->admin_notes,
+            ]);
+            return back()->with('success', 'Pengajuan lembur ditolak oleh Manajer.');
+        }
+
+        if ($user->isAdmin() && $overtime->current_approval_level === 3) {
+            $overtime->update([
+                'status' => 'rejected',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'admin_notes' => $request->admin_notes,
+            ]);
+            return back()->with('success', 'Pengajuan lembur ditolak oleh Admin.');
+        }
+
+        abort(403, 'Anda tidak memiliki hak untuk menolak pengajuan ini.');
     }
 }

@@ -23,8 +23,8 @@ class DashboardController extends Controller
         if ($user->isAdmin()) {
             $totalEmployees = User::where('role', 'karyawan')->where('status', 'active')->count();
             $todayPresent = Attendance::whereDate('date', $today)->whereNotNull('clock_in')->count();
-            $pendingLeaves = LeaveRequest::where('status', 'pending')->count();
-            $pendingOvertimes = OvertimeRequest::where('status', 'pending')->count();
+            $pendingLeaves = LeaveRequest::where('status', 'pending')->where('current_approval_level', 3)->count();
+            $pendingOvertimes = OvertimeRequest::where('status', 'pending')->where('current_approval_level', 3)->count();
 
             $recentAttendances = Attendance::with('user')
                 ->whereDate('date', $today)

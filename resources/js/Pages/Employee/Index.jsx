@@ -73,8 +73,8 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                             className="rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
                         >
                             <option value="all">Semua Departemen</option>
-                            {departments.map(dept => (
-                                <option key={dept} value={dept}>{dept}</option>
+                            {departments?.map(dept => (
+                                <option key={dept.id} value={dept.id}>{dept.name}</option>
                             ))}
                         </select>
                         <select
@@ -83,8 +83,8 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                             className="rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
                         >
                             <option value="all">Semua Unit</option>
-                            {units.map(u => (
-                                <option key={u} value={u}>{u}</option>
+                            {units?.filter(u => department === 'all' || u.department_id == department).map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
                             ))}
                         </select>
                         <button
@@ -150,6 +150,7 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Departemen</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Unit</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Jabatan</th>
+                                    <th className="px-5 py-4 text-left font-semibold text-slate-600">Hak Approval</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Gaji Pokok</th>
                                     <th className="px-5 py-4 text-center font-semibold text-slate-600">Jatah Cuti</th>
                                     <th className="px-5 py-4 text-left font-semibold text-slate-600">Status</th>
@@ -171,9 +172,23 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 font-mono text-slate-600">{employee.nip || employee.employee_id}</td>
-                                        <td className="px-5 py-4 text-slate-600">{employee.department}</td>
-                                        <td className="px-5 py-4 text-slate-600">{employee.unit || '-'}</td>
+                                        <td className="px-5 py-4 text-slate-600">{employee.department_model?.name || employee.department || '-'}</td>
+                                        <td className="px-5 py-4 text-slate-600">{employee.unit_model?.name || employee.unit || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{employee.position}</td>
+                                        <td className="px-5 py-4">
+                                            {employee.approval_role === 'koordinator' && (
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">Koordinator</span>
+                                            )}
+                                            {employee.approval_role === 'manajer' && (
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">Manajer</span>
+                                            )}
+                                            {employee.approval_role === 'direktur' && (
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700">Direktur</span>
+                                            )}
+                                            {(!employee.approval_role || employee.approval_role === 'staf') && (
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-500">Staf</span>
+                                            )}
+                                        </td>
                                         <td className="px-5 py-4 font-mono text-slate-700">{formatCurrency(employee.base_salary)}</td>
                                         <td className="px-5 py-4 text-center">
                                             <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
