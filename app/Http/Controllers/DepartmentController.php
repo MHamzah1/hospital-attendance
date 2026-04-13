@@ -35,6 +35,6 @@ class DepartmentController extends Controller
 
         $unit->update(['manager_id' => $validated['manager_id']]);
 
-        return back()->with('success', "Manajer untuk unit {$unit->name} berhasil diperbarui.");
+        return back()->with('success', "Manager untuk unit {$unit->name} berhasil diperbarui.");
     }
 }

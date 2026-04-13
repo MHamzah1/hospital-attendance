@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Leave Requests
     Route::get('/leaves', [LeaveController::class, 'index'])->name('leaves.index');
+    Route::get('/leaves/export-pdf', [LeaveController::class, 'exportPdf'])->name('leaves.exportPdf');
     Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
     Route::post('/leaves', [LeaveController::class, 'store'])->name('leaves.store');
     Route::post('/leaves/{leave}/approve', [LeaveController::class, 'approve'])->name('leaves.approve');
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Overtime Requests
     Route::get('/overtimes', [OvertimeController::class, 'index'])->name('overtimes.index');
+    Route::get('/overtimes/export-pdf', [OvertimeController::class, 'exportPdf'])->name('overtimes.exportPdf');
     Route::get('/overtimes/create', [OvertimeController::class, 'create'])->name('overtimes.create');
     Route::post('/overtimes', [OvertimeController::class, 'store'])->name('overtimes.store');
     Route::post('/overtimes/{overtime}/approve', [OvertimeController::class, 'approve'])->name('overtimes.approve');

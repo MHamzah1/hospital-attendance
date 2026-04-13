@@ -3,8 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FlashMessage from '@/Components/FlashMessage';
 import { Head, router, usePage } from '@inertiajs/react';
 
-export default function AttendanceIndex({ attendances, todayAttendance, todaySchedule, filters }) {
+export default function AttendanceIndex({ attendances, todayAttendance, todaySchedule, filters, units, departments }) {
     const { auth } = usePage().props;
+    const isAdmin = auth.user.role === 'admin_sdm';
     const [cameraOpen, setCameraOpen] = useState(false);
     const [cameraMode, setCameraMode] = useState('in'); // 'in' or 'out'
     const [capturedPhoto, setCapturedPhoto] = useState(null);
@@ -15,6 +16,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
 
     const [dateFrom, setDateFrom] = useState(filters.date_from);
     const [dateTo, setDateTo] = useState(filters.date_to);
+    const [searchInput, setSearchInput] = useState(filters.search || '');
 
     const isLibur = todaySchedule?.shift?.name === 'Libur';
 
@@ -69,8 +71,23 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
         });
     }, [capturedPhoto, cameraMode, stopCamera]);
 
+    const buildParams = (overrides = {}) => {
+        const base = {
+            date_from: dateFrom || '',
+            date_to: dateTo || '',
+            search: filters.search || '',
+            status: filters.status || '',
+            unit: filters.unit || 'all',
+            department: filters.department || 'all',
+            ...overrides,
+        };
+        const params = new URLSearchParams();
+        Object.entries(base).forEach(([k, v]) => { if (v) params.set(k, v); else params.set(k, ''); });
+        return params.toString();
+    };
+
     const filterData = () => {
-        router.get('/attendance', { date_from: dateFrom, date_to: dateTo }, { preserveState: true });
+        router.get(`/attendance?${buildParams({ date_from: dateFrom, date_to: dateTo })}`, {}, { preserveState: true });
     };
 
     const buildExportUrl = (type) => {
@@ -203,6 +220,62 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Search & Filters — admin only */}
+            {isAdmin && (
+                <div className="bg-white rounded-2xl border border-slate-200/60 p-4 mb-6">
+                    <form
+                        onSubmit={(e) => { e.preventDefault(); router.get(`/attendance?${buildParams({ search: searchInput })}`); }}
+                        className="flex flex-col sm:flex-row gap-4"
+                    >
+                        <div className="flex-1">
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Cari Karyawan</label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+                                    <input
+                                        type="text"
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        placeholder="Nama, NIP..."
+                                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                                    />
+                                </div>
+                                <button type="submit" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">Cari</button>
+                                {filters.search && (
+                                    <button type="button" onClick={() => { setSearchInput(''); router.get(`/attendance?${buildParams({ search: '' })}`); }} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Reset</button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="sm:w-48">
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Filter Unit</label>
+                            <select
+                                value={filters.unit || 'all'}
+                                onChange={(e) => router.get(`/attendance?${buildParams({ unit: e.target.value })}`)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                            >
+                                <option value="all">Semua Unit</option>
+                                {units?.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="sm:w-48">
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Filter Departemen</label>
+                            <select
+                                value={filters.department || 'all'}
+                                onChange={(e) => router.get(`/attendance?${buildParams({ department: e.target.value })}`)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                            >
+                                <option value="all">Semua Departemen</option>
+                                {departments?.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </form>
                 </div>
             )}
 

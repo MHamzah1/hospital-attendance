@@ -169,7 +169,7 @@ class OvertimeController extends Controller
                 'coordinator_notes' => $request->admin_notes,
                 'current_approval_level' => 2,
             ]);
-            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Koordinator. Menunggu persetujuan Manajer.');
+            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Koordinator. Menunggu persetujuan Manager.');
         }
 
         if ($user->isManajer() && $overtime->current_approval_level === 2) {
@@ -183,7 +183,7 @@ class OvertimeController extends Controller
                 'manager_notes' => $request->admin_notes,
                 'current_approval_level' => 3,
             ]);
-            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Manajer. Menunggu persetujuan Admin.');
+            return back()->with('success', 'Pengajuan lembur berhasil disetujui oleh Manager. Menunggu persetujuan Admin.');
         }
 
         if ($user->isAdmin() && $overtime->current_approval_level === 3) {
@@ -239,7 +239,7 @@ class OvertimeController extends Controller
                 'manager_approved_at' => now(),
                 'manager_notes' => $request->admin_notes,
             ]);
-            return back()->with('success', 'Pengajuan lembur ditolak oleh Manajer.');
+            return back()->with('success', 'Pengajuan lembur ditolak oleh Manager.');
         }
 
         if ($user->isAdmin() && $overtime->current_approval_level === 3) {
@@ -253,5 +253,48 @@ class OvertimeController extends Controller
         }
 
         abort(403, 'Anda tidak memiliki hak untuk menolak pengajuan ini.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user = $request->user();
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+
+        $query = OvertimeRequest::with(['user.departmentModel', 'user.unitModel']);
+
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        if ($dateFrom) {
+            $query->where('date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->where('date', '<=', $dateTo);
+        }
+
+        $overtimes = $query->orderBy('date', 'asc')->get();
+
+        $statusLabels = ['pending' => 'Pending', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
+        $categoryLabels = self::$categories;
+
+        $fromLabel = $dateFrom ? Carbon::parse($dateFrom)->format('d F Y') : '-';
+        $toLabel = $dateTo ? Carbon::parse($dateTo)->format('d F Y') : '-';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('overtime.rekap-pdf', [
+            'overtimes' => $overtimes,
+            'dateFrom' => $fromLabel,
+            'dateTo' => $toLabel,
+            'isAdmin' => $user->isAdmin(),
+            'currentUser' => $user,
+            'statusLabels' => $statusLabels,
+            'categoryLabels' => $categoryLabels,
+        ])->setPaper('a4', 'landscape');
+
+        $from = $dateFrom ? Carbon::parse($dateFrom)->format('d-m-Y') : 'awal';
+        $to = $dateTo ? Carbon::parse($dateTo)->format('d-m-Y') : 'akhir';
+
+        return $pdf->download("Rekap_Lembur_{$from}_sd_{$to}.pdf");
     }
 }

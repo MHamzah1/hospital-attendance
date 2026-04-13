@@ -19,7 +19,7 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
     };
 
     const approvalLevelLabel = (level) => {
-        const labels = { 1: 'Menunggu Koordinator', 2: 'Menunggu Manajer', 3: 'Menunggu Admin' };
+        const labels = { 1: 'Menunggu Koordinator', 2: 'Menunggu Manager', 3: 'Menunggu Admin' };
         return labels[level] || '-';
     };
 
@@ -204,6 +204,15 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                             </button>
                         </div>
                     )}
+                    <div className="flex items-end ml-auto">
+                        <a
+                            href={`/overtimes/export-pdf?date_from=${filters.date_from || ''}&date_to=${filters.date_to || ''}`}
+                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                            Export PDF
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -265,17 +274,9 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                                                     {approvalLevelLabel(ot.current_approval_level)}
                                                 </span>
                                             ) : (
-                                                <div className="space-y-1 text-xs">
-                                                    {ot.coordinator_approver && (
-                                                        <div className="text-blue-600">✓ Koordinator: {ot.coordinator_approver.name}</div>
-                                                    )}
-                                                    {ot.manager_approver && (
-                                                        <div className="text-purple-600">✓ Manajer: {ot.manager_approver.name}</div>
-                                                    )}
-                                                    {ot.approver && (
-                                                        <div className="text-emerald-600">✓ Admin: {ot.approver.name}</div>
-                                                    )}
-                                                </div>
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[ot.status]}`}>
+                                                    {statusLabels[ot.status]}
+                                                </span>
                                             )}
                                         </td>
                                         {isApprover && (

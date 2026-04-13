@@ -12,12 +12,12 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
     const [searchInput, setSearchInput] = useState(filters.search || '');
 
     const approvalRoleLabel = (role) => {
-        const labels = { koordinator: 'Koordinator', manajer: 'Manajer' };
+        const labels = { koordinator: 'Koordinator', manajer: 'Manager' };
         return labels[role] || 'Staf';
     };
 
     const approvalLevelLabel = (level) => {
-        const labels = { 1: 'Menunggu Koordinator', 2: 'Menunggu Manajer', 3: 'Menunggu Admin' };
+        const labels = { 1: 'Menunggu Koordinator', 2: 'Menunggu Manager', 3: 'Menunggu Admin' };
         return labels[level] || '-';
     };
 
@@ -139,6 +139,21 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                     ))}
                                 </select>
                             </div>
+                            {isAdmin && (
+                                <div className="sm:w-48">
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Filter Departemen</label>
+                                    <select
+                                        value={filters.department || 'all'}
+                                        onChange={(e) => router.get(`/leaves?${buildParams({ department: e.target.value })}`)}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                                    >
+                                        <option value="all">Semua Departemen</option>
+                                        {departments?.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                     </form>
                 )}
@@ -175,6 +190,15 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                             </button>
                         </div>
                     )}
+                    <div className="flex items-end ml-auto">
+                        <a
+                            href={`/leaves/export-pdf?date_from=${filters.date_from || ''}&date_to=${filters.date_to || ''}`}
+                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                            Export PDF
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -219,17 +243,9 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                                     {approvalLevelLabel(leave.current_approval_level)}
                                                 </span>
                                             ) : (
-                                                <div className="space-y-1 text-xs">
-                                                    {leave.coordinator_approver && (
-                                                        <div className="text-blue-600">✓ Koordinator: {leave.coordinator_approver.name}</div>
-                                                    )}
-                                                    {leave.manager_approver && (
-                                                        <div className="text-purple-600">✓ Manajer: {leave.manager_approver.name}</div>
-                                                    )}
-                                                    {leave.approver && (
-                                                        <div className="text-emerald-600">✓ Admin: {leave.approver.name}</div>
-                                                    )}
-                                                </div>
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[leave.status]}`}>
+                                                    {statusLabels[leave.status]}
+                                                </span>
                                             )}
                                         </td>
                                         {isApprover && (

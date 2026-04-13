@@ -20,7 +20,7 @@ export default function DepartmentIndex({ departments, managers }) {
             <div className="space-y-6">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Departemen & Unit</h2>
-                    <p className="text-slate-500 mt-1">Kelola struktur organisasi dan assignment manajer per unit</p>
+                    <p className="text-slate-500 mt-1">Kelola struktur organisasi dan assignment manager per unit</p>
                 </div>
 
                 {/* Stats */}
@@ -59,7 +59,7 @@ export default function DepartmentIndex({ departments, managers }) {
                                 </svg>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">Manajer Tersedia</p>
+                                <p className="text-sm text-slate-500">Manager Tersedia</p>
                                 <p className="text-2xl font-bold text-slate-800">{managers.length}</p>
                             </div>
                         </div>
@@ -100,7 +100,7 @@ export default function DepartmentIndex({ departments, managers }) {
                                                 <tr className="bg-slate-50/80">
                                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Unit</th>
                                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Jumlah Karyawan</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Manajer Penanggung Jawab</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Manager Penanggung Jawab</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -146,10 +146,10 @@ export default function DepartmentIndex({ departments, managers }) {
                         Tentang Alur Approval
                     </h4>
                     <ul className="text-sm text-blue-700 space-y-1 ml-7 list-disc">
-                        <li><strong>Staf</strong> mengajukan → Koordinator di unit yang sama → Manajer yang ditugaskan → Admin</li>
-                        <li><strong>Koordinator</strong> mengajukan → Manajer yang ditugaskan → Admin</li>
-                        <li><strong>Manajer / Direktur</strong> mengajukan → Langsung ke Admin</li>
-                        <li>Assign manajer di kolom "Manajer Penanggung Jawab" agar alur approval berjalan otomatis</li>
+                        <li><strong>Staf</strong> mengajukan → Koordinator di unit yang sama → Manager yang ditugaskan → Admin</li>
+                        <li><strong>Koordinator</strong> mengajukan → Manager yang ditugaskan → Admin</li>
+                        <li><strong>Manager / Direktur</strong> mengajukan → Langsung ke Admin</li>
+                        <li>Assign manager di kolom "Manager Penanggung Jawab" agar alur approval berjalan otomatis</li>
                     </ul>
                 </div>
             </div>

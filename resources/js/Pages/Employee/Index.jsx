@@ -180,7 +180,7 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                                                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">Koordinator</span>
                                             )}
                                             {employee.approval_role === 'manajer' && (
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">Manajer</span>
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">Manager</span>
                                             )}
                                             {employee.approval_role === 'direktur' && (
                                                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700">Direktur</span>

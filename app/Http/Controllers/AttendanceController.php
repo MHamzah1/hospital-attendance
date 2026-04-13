@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Department;
+use App\Models\Unit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,9 +19,11 @@ class AttendanceController extends Controller
         $dateTo    = $request->get('date_to', Carbon::now()->format('Y-m-d'));
         $search    = $request->get('search', '');
         $status    = $request->get('status', '');
+        $unitFilter = $request->get('unit', 'all');
+        $deptFilter = $request->get('department', 'all');
 
         if ($user->isAdmin()) {
-            $query = Attendance::with(['user', 'shift'])
+            $query = Attendance::with(['user.departmentModel', 'user.unitModel', 'shift'])
                 ->whereBetween('date', [$dateFrom, $dateTo]);
 
             // Filter pencarian nama karyawan
@@ -34,6 +38,20 @@ class AttendanceController extends Controller
             // Filter status
             if ($status && in_array($status, ['present', 'late', 'absent', 'sick', 'leave'])) {
                 $query->where('status', $status);
+            }
+
+            // Filter unit
+            if ($unitFilter !== 'all') {
+                $query->whereHas('user', function ($q) use ($unitFilter) {
+                    $q->where('unit_id', $unitFilter);
+                });
+            }
+
+            // Filter department
+            if ($deptFilter !== 'all') {
+                $query->whereHas('user', function ($q) use ($deptFilter) {
+                    $q->where('department_id', $deptFilter);
+                });
             }
 
             $attendances = $query
@@ -74,6 +92,9 @@ class AttendanceController extends Controller
                 ->first();
         }
 
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
+
         return Inertia::render('Attendance/Index', [
             'attendances'    => $attendances,
             'todayAttendance'=> $todayAttendance,
@@ -83,7 +104,11 @@ class AttendanceController extends Controller
                 'date_to'   => $dateTo,
                 'search'    => $search,
                 'status'    => $status,
+                'unit'      => $unitFilter,
+                'department'=> $deptFilter,
             ],
+            'departments' => $departments,
+            'units' => $units,
             'userShift' => $user->shift,
         ]);
     }

@@ -187,7 +187,7 @@ class LeaveController extends Controller
                 'coordinator_notes' => $request->admin_notes,
                 'current_approval_level' => 2,
             ]);
-            return back()->with('success', 'Pengajuan cuti berhasil disetujui oleh Koordinator. Menunggu persetujuan Manajer.');
+            return back()->with('success', 'Pengajuan cuti berhasil disetujui oleh Koordinator. Menunggu persetujuan Manager.');
         }
 
         if ($user->isManajer() && $leave->current_approval_level === 2) {
@@ -201,7 +201,7 @@ class LeaveController extends Controller
                 'manager_notes' => $request->admin_notes,
                 'current_approval_level' => 3,
             ]);
-            return back()->with('success', 'Pengajuan cuti berhasil disetujui oleh Manajer. Menunggu persetujuan Admin.');
+            return back()->with('success', 'Pengajuan cuti berhasil disetujui oleh Manager. Menunggu persetujuan Admin.');
         }
 
         if ($user->isAdmin() && $leave->current_approval_level === 3) {
@@ -247,7 +247,7 @@ class LeaveController extends Controller
                 'manager_approved_at' => now(),
                 'manager_notes' => $request->admin_notes,
             ]);
-            return back()->with('success', 'Pengajuan cuti ditolak oleh Manajer.');
+            return back()->with('success', 'Pengajuan cuti ditolak oleh Manager.');
         }
 
         if ($user->isAdmin() && $leave->current_approval_level === 3) {
@@ -261,5 +261,48 @@ class LeaveController extends Controller
         }
 
         abort(403, 'Anda tidak memiliki hak untuk menolak pengajuan ini.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user = $request->user();
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+
+        $query = LeaveRequest::with(['user.departmentModel', 'user.unitModel']);
+
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        if ($dateFrom) {
+            $query->where('start_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->where('end_date', '<=', $dateTo);
+        }
+
+        $leaves = $query->orderBy('start_date', 'asc')->get();
+
+        $statusLabels = ['pending' => 'Pending', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
+        $typeLabels = LeaveRequest::typeLabels();
+
+        $fromLabel = $dateFrom ? Carbon::parse($dateFrom)->format('d F Y') : '-';
+        $toLabel = $dateTo ? Carbon::parse($dateTo)->format('d F Y') : '-';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('leave.rekap-pdf', [
+            'leaves' => $leaves,
+            'dateFrom' => $fromLabel,
+            'dateTo' => $toLabel,
+            'isAdmin' => $user->isAdmin(),
+            'currentUser' => $user,
+            'statusLabels' => $statusLabels,
+            'typeLabels' => $typeLabels,
+        ])->setPaper('a4', 'landscape');
+
+        $from = $dateFrom ? Carbon::parse($dateFrom)->format('d-m-Y') : 'awal';
+        $to = $dateTo ? Carbon::parse($dateTo)->format('d-m-Y') : 'akhir';
+
+        return $pdf->download("Rekap_Cuti_{$from}_sd_{$to}.pdf");
     }
 }

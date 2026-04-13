@@ -182,7 +182,7 @@ export default function EmployeeCreate({ departments, units }) {
                                 >
                                     <option value="staf">Staf (Tidak bisa approve)</option>
                                     <option value="koordinator">Koordinator (Approve level 1)</option>
-                                    <option value="manajer">Manajer (Approve level 2)</option>
+                                    <option value="manajer">Manager (Approve level 2)</option>
                                     <option value="direktur">Direktur (Langsung ke Admin)</option>
                                 </select>
                                 <p className="text-slate-400 text-xs mt-1">Tentukan hak approval untuk pengajuan cuti & lembur di unit yang sama</p>
