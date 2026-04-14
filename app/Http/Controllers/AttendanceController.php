@@ -116,130 +116,125 @@ class AttendanceController extends Controller
     public function exportExcel(Request $request)
     {
         $user     = $request->user();
+        if (!$user->isAdmin()) { abort(403); }
         $dateFrom = $request->get('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $dateTo   = $request->get('date_to', Carbon::now()->format('Y-m-d'));
 
         $query = Attendance::with(['user', 'shift'])
             ->whereBetween('date', [$dateFrom, $dateTo]);
 
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
+        $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
+        $attendances = $attendances->map(fn ($a) => $this->appendPhotoUrls($a));
+
+        $isAdmin     = $user->isAdmin();
+        $fromLabel   = Carbon::parse($dateFrom)->format('d-m-Y');
+        $toLabel     = Carbon::parse($dateTo)->format('d-m-Y');
+        $fromDisplay = Carbon::parse($dateFrom)->format('d F Y');
+        $toDisplay   = Carbon::parse($dateTo)->format('d F Y');
+        $fileName    = "Rekap_Absensi_{$fromLabel}_sd_{$toLabel}.xlsx";
+
+        $statusLabels = ['present' => 'Hadir', 'late' => 'Terlambat', 'absent' => 'Tidak Hadir', 'leave' => 'Cuti', 'sick' => 'Sakit'];
+        $statusColors = ['present' => '059669', 'late' => 'D97706', 'absent' => 'E74C3C', 'leave' => '3B82F6', 'sick' => '8B5CF6'];
+
+        $headers  = $isAdmin
+            ? ['No', 'Tanggal', 'Hari', 'NIP', 'Nama Karyawan', 'Departemen', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan']
+            : ['No', 'Tanggal', 'Hari', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan'];
+        $colCount = count($headers);
+        $lastCol  = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet()->setTitle('Rekap Absensi');
+
+        $sheet->setCellValue('A1', 'REKAPITULASI ABSENSI KARYAWAN')->mergeCells("A1:{$lastCol}1");
+        $sheet->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14], 'alignment' => ['horizontal' => 'center']]);
+        $sheet->setCellValue('A2', 'Rumah Sakit Kartika Husada Setu')->mergeCells("A2:{$lastCol}2");
+        $sheet->getStyle('A2')->applyFromArray(['font' => ['bold' => true, 'size' => 11], 'alignment' => ['horizontal' => 'center']]);
+        $sheet->setCellValue('A3', "Periode: {$fromDisplay} s/d {$toDisplay}")->mergeCells("A3:{$lastCol}3");
+        $sheet->getStyle('A3')->applyFromArray(['alignment' => ['horizontal' => 'center']]);
+
+        $hRow = 5;
+        foreach ($headers as $i => $h) {
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1) . $hRow, $h);
+        }
+        $sheet->getStyle("A{$hRow}:{$lastCol}{$hRow}")->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '0F3460']],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+        ]);
+
+        $dRow = $hRow + 1;
+        foreach ($attendances as $i => $att) {
+            $date        = Carbon::parse($att->date);
+            $shiftName   = $att->shift?->name ?? '-';
+            $shiftTime   = ($att->shift?->start_time && $att->shift?->end_time)
+                ? substr($att->shift->start_time, 0, 5) . ' - ' . substr($att->shift->end_time, 0, 5)
+                : '-';
+            $statusLabel = $statusLabels[$att->status] ?? $att->status;
+            $late        = $att->status === 'late' ? ($att->late_duration ?? '-') : '-';
+
+            $rowData = $isAdmin
+                ? [$i + 1, $date->format('d/m/Y'), $date->locale('id')->isoFormat('dddd'),
+                   $att->user?->nip ?? '-', $att->user?->name ?? '-', $att->user?->department ?? '-',
+                   $shiftName, $shiftTime, $att->clock_in ?? '-', $att->clock_out ?? '-', $statusLabel, $late]
+                : [$i + 1, $date->format('d/m/Y'), $date->locale('id')->isoFormat('dddd'),
+                   $shiftName, $shiftTime, $att->clock_in ?? '-', $att->clock_out ?? '-', $statusLabel, $late];
+
+            foreach ($rowData as $j => $v) {
+                $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($j + 1) . $dRow, $v);
+            }
+
+            $fillColor = ($i % 2 === 1) ? 'F0F4F8' : 'FFFFFF';
+            $sheet->getStyle("A{$dRow}:{$lastCol}{$dRow}")->applyFromArray([
+                'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => $fillColor]],
+                'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
+            ]);
+
+            $statusColIdx = $isAdmin ? 11 : 8;
+            $statusCell   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($statusColIdx) . $dRow;
+            $statusHex    = $statusColors[$att->status] ?? '374151';
+            $sheet->getStyle($statusCell)->getFont()
+                  ->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF' . $statusHex))->setBold(true);
+            $dRow++;
         }
 
-        $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
+        $dRow++;
+        $sheet->setCellValue("A{$dRow}", 'RINGKASAN');
+        $sheet->getStyle("A{$dRow}")->getFont()->setBold(true)->setSize(10);
+        $dRow++;
+        foreach ([
+            ['Total Absensi', $attendances->count()],
+            ['Hadir',         $attendances->where('status', 'present')->count()],
+            ['Terlambat',     $attendances->where('status', 'late')->count()],
+            ['Tidak Hadir',   $attendances->where('status', 'absent')->count()],
+            ['Cuti',          $attendances->where('status', 'leave')->count()],
+            ['Sakit',         $attendances->where('status', 'sick')->count()],
+        ] as [$label, $val]) {
+            $sheet->setCellValue("A{$dRow}", $label)->setCellValue("B{$dRow}", $val);
+            $sheet->getStyle("A{$dRow}")->getFont()->setBold(true);
+            $dRow++;
+        }
 
-        $fromLabel = Carbon::parse($dateFrom)->format('d-m-Y');
-        $toLabel   = Carbon::parse($dateTo)->format('d-m-Y');
-        $fileName  = "Rekap_Absensi_{$fromLabel}_sd_{$toLabel}.csv";
+        for ($i = 1; $i <= $colCount; $i++) {
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+        }
 
-        $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
-        ];
-
-        $statusLabels = [
-            'present' => 'Hadir',
-            'late'    => 'Terlambat',
-            'absent'  => 'Tidak Hadir',
-            'leave'   => 'Cuti',
-            'sick'    => 'Sakit',
-        ];
-
-        $callback = function () use ($attendances, $fromLabel, $toLabel, $user, $statusLabels) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-            fputcsv($file, ['REKAPITULASI ABSENSI KARYAWAN']);
-            fputcsv($file, ['Rumah Sakit Kartika Husada Setu']);
-            fputcsv($file, ['Periode', $fromLabel . ' s/d ' . $toLabel]);
-            fputcsv($file, []);
-
-            if ($user->isAdmin()) {
-                fputcsv($file, ['No', 'Tanggal', 'Hari', 'NIP', 'Nama Karyawan', 'Departemen', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan']);
-            } else {
-                fputcsv($file, ['No', 'Tanggal', 'Hari', 'Shift', 'Jam Shift', 'Clock In', 'Clock Out', 'Status', 'Keterlambatan']);
-            }
-
-            foreach ($attendances as $i => $att) {
-                $date        = Carbon::parse($att->date);
-                $shiftName   = $att->shift?->name ?? '-';
-                $shiftTime   = ($att->shift?->start_time && $att->shift?->end_time)
-                    ? substr($att->shift->start_time, 0, 5) . ' - ' . substr($att->shift->end_time, 0, 5)
-                    : '-';
-                $statusLabel = $statusLabels[$att->status] ?? $att->status;
-                $late        = ($att->status === 'late') ? ($att->late_duration ?? '-') : '-';
-
-                // recalculate late_duration if needed
-                if ($att->status === 'late' && !$att->late_duration) {
-                    $att = $this->appendPhotoUrls($att);
-                    $late = $att->late_duration ?? '-';
-                }
-
-                if ($user->isAdmin()) {
-                    fputcsv($file, [
-                        $i + 1,
-                        $date->format('d/m/Y'),
-                        $date->locale('id')->isoFormat('dddd'),
-                        $att->user?->nip ?? $att->user?->employee_id ?? '-',
-                        $att->user?->name ?? '-',
-                        $att->user?->department ?? '-',
-                        $shiftName,
-                        $shiftTime,
-                        $att->clock_in ?? '-',
-                        $att->clock_out ?? '-',
-                        $statusLabel,
-                        $late,
-                    ]);
-                } else {
-                    fputcsv($file, [
-                        $i + 1,
-                        $date->format('d/m/Y'),
-                        $date->locale('id')->isoFormat('dddd'),
-                        $shiftName,
-                        $shiftTime,
-                        $att->clock_in ?? '-',
-                        $att->clock_out ?? '-',
-                        $statusLabel,
-                        $late,
-                    ]);
-                }
-            }
-
-            fputcsv($file, []);
-            // Summary
-            $total   = $attendances->count();
-            $present = $attendances->where('status', 'present')->count();
-            $late    = $attendances->where('status', 'late')->count();
-            $absent  = $attendances->where('status', 'absent')->count();
-            $leave   = $attendances->where('status', 'leave')->count();
-            $sick    = $attendances->where('status', 'sick')->count();
-
-            fputcsv($file, ['=== RINGKASAN ===']);
-            fputcsv($file, ['Total Absensi',   $total]);
-            fputcsv($file, ['Hadir',           $present]);
-            fputcsv($file, ['Terlambat',       $late]);
-            fputcsv($file, ['Tidak Hadir',     $absent]);
-            fputcsv($file, ['Cuti',            $leave]);
-            fputcsv($file, ['Sakit',           $sick]);
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        $tmp = tempnam(sys_get_temp_dir(), 'xlsx_');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tmp);
+        return response()->download($tmp, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function exportPdf(Request $request)
     {
         $user     = $request->user();
+        if (!$user->isAdmin()) { abort(403); }
         $dateFrom = $request->get('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $dateTo   = $request->get('date_to', Carbon::now()->format('Y-m-d'));
 
         $query = Attendance::with(['user', 'shift'])
             ->whereBetween('date', [$dateFrom, $dateTo]);
-
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
-        }
 
         $attendances = $query->orderBy('date', 'asc')->orderBy('user_id', 'asc')->get();
         $attendances = $attendances->map(fn ($a) => $this->appendPhotoUrls($a));

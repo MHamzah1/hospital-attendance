@@ -92,7 +92,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                             </Link>
                         ))}
                     </div>
-                    {!isApprover && (
+                    {!isAdmin && (
                         <Link href="/leaves/create" className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             Ajukan Cuti
@@ -190,7 +190,15 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                             </button>
                         </div>
                     )}
-                    <div className="flex items-end ml-auto">
+                    {isAdmin && (
+                    <div className="flex items-end ml-auto gap-2">
+                        <a
+                            href={`/leaves/export-excel?date_from=${filters.date_from || ''}&date_to=${filters.date_to || ''}`}
+                            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            Export Excel
+                        </a>
                         <Link
                             href={`/leaves/export-pdf?date_from=${filters.date_from || ''}&date_to=${filters.date_to || ''}`}
                             className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
@@ -199,6 +207,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                             Export PDF
                         </Link>
                     </div>
+                    )}
                 </div>
             </div>
 

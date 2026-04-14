@@ -22,7 +22,7 @@ class DepartmentUnitSeeder extends Seeder
             ],
             'NON MEDIS' => [
                 'IT', 'ADMIN & KASIR', 'SDM', 'MARKETING', 'CUSTOMER CARE',
-                'UMUM', 'KESLING', 'K3RS',
+                'UMUM', 'KESLING', 'K3RS', 'KANTOR',
             ],
             'MEDIS' => ['DOKTER'],
         ];

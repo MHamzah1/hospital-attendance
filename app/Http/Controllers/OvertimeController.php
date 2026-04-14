@@ -40,7 +40,8 @@ class OvertimeController extends Controller
                         ->whereHas('user', function ($uq) use ($managedUnitIds) {
                             $uq->whereIn('unit_id', $managedUnitIds);
                         });
-                })->orWhere('manager_approved_by', $user->id);
+                })->orWhere('manager_approved_by', $user->id)
+                  ->orWhere('user_id', $user->id);
             });
         } elseif ($user->isKoordinator()) {
             $query->where(function ($q) use ($user) {
@@ -50,7 +51,8 @@ class OvertimeController extends Controller
                         ->whereHas('user', function ($uq) use ($user) {
                             $uq->where('unit_id', $user->unit_id);
                         });
-                })->orWhere('coordinator_approved_by', $user->id);
+                })->orWhere('coordinator_approved_by', $user->id)
+                  ->orWhere('user_id', $user->id);
             });
         } else {
             $query->where('user_id', $user->id);
@@ -140,6 +142,13 @@ class OvertimeController extends Controller
 
         $totalHours = round(abs($end->diffInMinutes($start)) / 60, 2);
 
+        // KANTOR unit skips koordinator & manager, goes directly to admin (level 3)
+        $userUnit = $request->user()->unitModel;
+        $initialLevel = $request->user()->getInitialApprovalLevel();
+        if ($userUnit && strtoupper($userUnit->name) === 'KANTOR') {
+            $initialLevel = 3;
+        }
+
         OvertimeRequest::create([
             'user_id'      => $request->user()->id,
             'date'         => $validated['date'],
@@ -151,7 +160,7 @@ class OvertimeController extends Controller
             'total_pay'    => 0,
             'reason'       => $validated['reason'],
             'status'       => 'pending',
-            'current_approval_level' => $request->user()->getInitialApprovalLevel(),
+            'current_approval_level' => $initialLevel,
         ]);
 
         return redirect()->route('overtimes.index')->with('success', 'Pengajuan lembur berhasil dikirim!');
@@ -255,17 +264,116 @@ class OvertimeController extends Controller
         abort(403, 'Anda tidak memiliki hak untuk menolak pengajuan ini.');
     }
 
+    public function exportExcel(Request $request)
+    {
+        $user     = $request->user();
+        if (!$user->isAdmin()) { abort(403); }
+        $dateFrom = $request->get('date_from');
+        $dateTo   = $request->get('date_to');
+
+        $query = OvertimeRequest::with(['user.departmentModel', 'user.unitModel']);
+        if ($dateFrom) { $query->where('date', '>=', $dateFrom); }
+        if ($dateTo)   { $query->where('date', '<=', $dateTo); }
+
+        $overtimes      = $query->orderBy('date', 'asc')->get();
+        $categoryLabels = self::$categories;
+        $statusLabels   = ['pending' => 'Pending', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
+        $statusColors   = ['approved' => '059669', 'rejected' => 'E74C3C', 'pending' => 'D97706'];
+
+        $isAdmin     = $user->isAdmin();
+        $fromLabel   = $dateFrom ? Carbon::parse($dateFrom)->format('d-m-Y') : 'awal';
+        $toLabel     = $dateTo   ? Carbon::parse($dateTo)->format('d-m-Y')   : 'akhir';
+        $fromDisplay = $dateFrom ? Carbon::parse($dateFrom)->format('d F Y') : '-';
+        $toDisplay   = $dateTo   ? Carbon::parse($dateTo)->format('d F Y')   : '-';
+        $fileName    = "Rekap_Lembur_{$fromLabel}_sd_{$toLabel}.xlsx";
+
+        $headers  = $isAdmin
+            ? ['No', 'Nama Karyawan', 'NIP', 'Unit', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Total Jam', 'Kategori', 'Total Bayar', 'Alasan', 'Status']
+            : ['No', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Total Jam', 'Kategori', 'Alasan', 'Status'];
+        $colCount = count($headers);
+        $lastCol  = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet()->setTitle('Rekap Lembur');
+
+        $sheet->setCellValue('A1', 'REKAP PENGAJUAN LEMBUR')->mergeCells("A1:{$lastCol}1");
+        $sheet->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14], 'alignment' => ['horizontal' => 'center']]);
+        $sheet->setCellValue('A2', 'Rumah Sakit Kartika Husada Setu')->mergeCells("A2:{$lastCol}2");
+        $sheet->getStyle('A2')->applyFromArray(['font' => ['bold' => true, 'size' => 11], 'alignment' => ['horizontal' => 'center']]);
+        $sheet->setCellValue('A3', "Periode: {$fromDisplay} s/d {$toDisplay}")->mergeCells("A3:{$lastCol}3");
+        $sheet->getStyle('A3')->applyFromArray(['alignment' => ['horizontal' => 'center']]);
+
+        $hRow = 5;
+        foreach ($headers as $i => $h) {
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1) . $hRow, $h);
+        }
+        $sheet->getStyle("A{$hRow}:{$lastCol}{$hRow}")->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '0F3460']],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+        ]);
+
+        $dRow = $hRow + 1;
+        foreach ($overtimes as $i => $ot) {
+            $totalPay = $ot->status === 'approved'
+                ? 'Rp ' . number_format(abs($ot->total_pay ?? 0), 0, ',', '.')
+                : ($ot->status === 'rejected' ? 'Rp 0' : 'Menunggu');
+            $rowData = $isAdmin
+                ? [$i + 1,
+                   $ot->user?->name ?? '-',
+                   $ot->user?->nip ?? '-',
+                   $ot->user?->unit_model?->name ?? '-',
+                   Carbon::parse($ot->date)->format('d/m/Y'),
+                   $ot->start_time ?? '-',
+                   $ot->end_time ?? '-',
+                   abs($ot->total_hours ?? 0),
+                   $categoryLabels[$ot->category] ?? $ot->category ?? '-',
+                   $totalPay,
+                   $ot->reason ?? '-',
+                   $statusLabels[$ot->status] ?? $ot->status]
+                : [$i + 1,
+                   Carbon::parse($ot->date)->format('d/m/Y'),
+                   $ot->start_time ?? '-',
+                   $ot->end_time ?? '-',
+                   abs($ot->total_hours ?? 0),
+                   $categoryLabels[$ot->category] ?? $ot->category ?? '-',
+                   $ot->reason ?? '-',
+                   $statusLabels[$ot->status] ?? $ot->status];
+
+            foreach ($rowData as $j => $v) {
+                $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($j + 1) . $dRow, $v);
+            }
+            $fillColor = ($i % 2 === 1) ? 'F0F4F8' : 'FFFFFF';
+            $sheet->getStyle("A{$dRow}:{$lastCol}{$dRow}")->applyFromArray([
+                'fill'    => ['fillType' => 'solid', 'startColor' => ['rgb' => $fillColor]],
+                'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'CCCCCC']]],
+            ]);
+            $statusColIdx = $isAdmin ? 12 : 8;
+            $statusCell   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($statusColIdx) . $dRow;
+            $sheet->getStyle($statusCell)->getFont()
+                  ->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF' . ($statusColors[$ot->status] ?? '374151')))->setBold(true);
+            $dRow++;
+        }
+
+        for ($i = 1; $i <= $colCount; $i++) {
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+        }
+        $tmp = tempnam(sys_get_temp_dir(), 'xlsx_');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tmp);
+        return response()->download($tmp, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function exportPdf(Request $request)
     {
         $user = $request->user();
+        if (!$user->isAdmin()) { abort(403); }
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
 
         $query = OvertimeRequest::with(['user.departmentModel', 'user.unitModel']);
-
-        if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
-        }
 
         if ($dateFrom) {
             $query->where('date', '>=', $dateFrom);

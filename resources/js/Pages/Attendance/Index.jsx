@@ -308,6 +308,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                         Filter
                     </button>
 
+                    {isAdmin && (
                     <div className="flex gap-2 ml-auto">
                         <a
                             href={buildExportUrl('excel')}
@@ -324,6 +325,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                             Export PDF
                         </Link>
                     </div>
+                    )}
                 </div>
             </div>
 
