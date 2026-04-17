@@ -13,7 +13,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'nip', 'password', 'role', 'employee_id',
         'department', 'unit', 'department_id', 'unit_id',
-        'position', 'approval_role', 'phone', 'address', 'join_date', 'npwp',
+        'position', 'job_position_id', 'approval_role', 'phone', 'address', 'join_date', 'npwp',
         'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'status', 'photo', 'shift_id',
         'base_salary', 'position_allowance', 'functional_allowance', 'special_allowance', 'meal_allowance', 'transport_allowance', 'attendance_allowance',
         'gender', 'education', 'birth_place', 'birth_date', 'city', 'bank_name', 'bank_account',
@@ -101,6 +101,11 @@ class User extends Authenticatable
     public function unitModel()
     {
         return $this->belongsTo(Unit::class, 'unit_id');
+    }
+
+    public function jobPosition()
+    {
+        return $this->belongsTo(JobPosition::class);
     }
 
     /**

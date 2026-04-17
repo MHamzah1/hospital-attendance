@@ -25,7 +25,7 @@ function InputField({ label, name, type = 'text', required = false, placeholder 
     );
 }
 
-export default function EmployeeCreate({ departments, units }) {
+export default function EmployeeCreate({ departments, units, jobPositions }) {
     const { data, setData, post, processing, errors } = useForm({
         // Informasi Dasar
         nip: '',
@@ -45,6 +45,7 @@ export default function EmployeeCreate({ departments, units }) {
         unit: '',
         unit_id: '',
         position: '',
+        job_position_id: '',
         approval_role: 'staf',
         join_date: '',
         status: 'active',
@@ -170,7 +171,27 @@ export default function EmployeeCreate({ departments, units }) {
                                 </select>
                                 {errors.unit_id && <p className="text-red-500 text-xs mt-1">{errors.unit_id}</p>}
                             </div>
-                            <InputField data={data} setData={setData} errors={errors} label="Jabatan" name="position" required placeholder="Dokter, Perawat, dll" />
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Jenis Jabatan <span className="text-red-400">*</span>
+                                </label>
+                                <select
+                                    value={data.job_position_id}
+                                    onChange={e => {
+                                        const selectedId = e.target.value;
+                                        const selectedPosition = jobPositions?.find(p => String(p.id) === String(selectedId));
+                                        setData('job_position_id', selectedId);
+                                        setData('position', selectedPosition?.name || '');
+                                    }}
+                                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${errors.job_position_id || errors.position ? 'border-red-300' : ''}`}
+                                >
+                                    <option value="">Pilih Jenis Jabatan</option>
+                                    {jobPositions?.map(position => (
+                                        <option key={position.id} value={position.id}>{position.name}</option>
+                                    ))}
+                                </select>
+                                {(errors.job_position_id || errors.position) && <p className="text-red-500 text-xs mt-1">{errors.job_position_id || errors.position}</p>}
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Hak Akses Approval
@@ -183,7 +204,7 @@ export default function EmployeeCreate({ departments, units }) {
                                     <option value="staf">Staf (Tidak bisa approve)</option>
                                     <option value="koordinator">Koordinator (Approve level 1)</option>
                                     <option value="manajer">Manager (Approve level 2)</option>
-                                    <option value="direktur">Direktur (Langsung ke Admin)</option>
+                                    <option value="direktur">Kantor (Langsung ke Admin)</option>
                                 </select>
                                 <p className="text-slate-400 text-xs mt-1">Tentukan hak approval untuk pengajuan cuti & lembur di unit yang sama</p>
                             </div>

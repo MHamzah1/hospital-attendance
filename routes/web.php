@@ -106,7 +106,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Department & Unit Management
         Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::post('/departments/sync-from-excel', [DepartmentController::class, 'syncFromExcel'])->name('departments.syncFromExcel');
+        Route::post('/departments', [DepartmentController::class, 'storeDepartment'])->name('departments.store');
+        Route::delete('/departments/{department}', [DepartmentController::class, 'destroyDepartment'])->name('departments.destroy');
+        Route::post('/departments/units', [DepartmentController::class, 'storeUnit'])->name('departments.units.store');
+        Route::delete('/departments/units/{unit}', [DepartmentController::class, 'destroyUnit'])->name('departments.units.destroy');
         Route::put('/departments/units/{unit}/manager', [DepartmentController::class, 'updateManager'])->name('departments.updateManager');
+        Route::post('/departments/job-positions', [DepartmentController::class, 'storeJobPosition'])->name('departments.jobPositions.store');
+        Route::delete('/departments/job-positions/{jobPosition}', [DepartmentController::class, 'destroyJobPosition'])->name('departments.jobPositions.destroy');
     });
 });
 

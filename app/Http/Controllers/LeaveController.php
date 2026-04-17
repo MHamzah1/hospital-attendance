@@ -165,7 +165,7 @@ class LeaveController extends Controller
 
         // KANTOR unit skips koordinator & manager, goes directly to admin (level 3)
         $userUnit = $request->user()->unitModel;
-        if ($userUnit && strtoupper($userUnit->name) === 'KANTOR') {
+        if ($userUnit && strtoupper(trim($userUnit->name)) === 'KANTOR') {
             $initialLevel = 3;
         }
 

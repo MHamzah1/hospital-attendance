@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\JobPosition;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -199,8 +202,11 @@ class BulkImportController extends Controller
             'birth_place' => '',
             'birth_date' => null,
             'department' => '',
+            'department_id' => null,
             'unit' => '',
+            'unit_id' => null,
             'position' => '',
+            'job_position_id' => null,
             'phone' => '',
             'address' => '',
             'city' => '',
@@ -270,6 +276,9 @@ class BulkImportController extends Controller
         // Validasi required fields
         if (!$data['nip']) throw new \Exception('NIP tidak boleh kosong');
         if (!$data['name']) throw new \Exception('Nama tidak boleh kosong');
+        if (!$data['department']) throw new \Exception('Departemen tidak boleh kosong');
+        if (!$data['unit']) throw new \Exception('Unit tidak boleh kosong');
+        if (!$data['position']) throw new \Exception('Jabatan tidak boleh kosong');
 
         // Check duplicate NIP using cached array (faster than DB query per row)
         $nipStr = (string) $data['nip'];
@@ -277,7 +286,52 @@ class BulkImportController extends Controller
             throw new \Exception("NIP '{$data['nip']}' sudah terdaftar");
         }
 
+        $this->resolveMasterData($data);
+
         return $data;
+    }
+
+    private function resolveMasterData(array &$data): void
+    {
+        $departmentName = $this->normalizeName($data['department'] ?? null);
+        $unitName = $this->normalizeName($data['unit'] ?? null);
+        $positionName = $this->normalizeName($data['position'] ?? null);
+
+        if (!$departmentName || !$unitName || !$positionName) {
+            throw new \Exception('Departemen, Unit, dan Jabatan wajib diisi.');
+        }
+
+        $department = Department::firstOrCreate([
+            'name' => strtoupper($departmentName) === 'MANAGEMEN' ? 'MANAJEMEN' : $departmentName,
+        ]);
+
+        $unit = Unit::firstOrCreate([
+            'department_id' => $department->id,
+            'name' => $unitName,
+        ]);
+
+        $jobPosition = JobPosition::firstOrCreate([
+            'name' => $positionName,
+        ]);
+
+        $data['department'] = $department->name;
+        $data['department_id'] = $department->id;
+        $data['unit'] = $unit->name;
+        $data['unit_id'] = $unit->id;
+        $data['position'] = $jobPosition->name;
+        $data['job_position_id'] = $jobPosition->id;
+    }
+
+    private function normalizeName($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $name = trim((string) $value);
+        $name = preg_replace('/\s+/', ' ', $name);
+
+        return $name === '' ? null : $name;
     }
 
     /**

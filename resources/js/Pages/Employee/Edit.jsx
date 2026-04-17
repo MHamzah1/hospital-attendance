@@ -25,7 +25,7 @@ function InputField({ label, name, type = 'text', required = false, placeholder 
     );
 }
 
-export default function EmployeeEdit({ employee, departments, units }) {
+export default function EmployeeEdit({ employee, departments, units, jobPositions }) {
     const { data, setData, put, processing, errors } = useForm({
         // Informasi Dasar
         name: employee.name || '',
@@ -45,6 +45,7 @@ export default function EmployeeEdit({ employee, departments, units }) {
         unit: employee.unit || '',
         unit_id: employee.unit_id || '',
         position: employee.position || '',
+        job_position_id: employee.job_position_id || '',
         approval_role: employee.approval_role || 'staf',
         join_date: employee.join_date ? employee.join_date.split('T')[0] : '',
         status: employee.status || 'active',
@@ -170,7 +171,27 @@ export default function EmployeeEdit({ employee, departments, units }) {
                                 </select>
                                 {errors.unit_id && <p className="text-red-500 text-xs mt-1">{errors.unit_id}</p>}
                             </div>
-                            <InputField data={data} setData={setData} errors={errors} label="Jabatan" name="position" required />
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Jenis Jabatan <span className="text-red-400">*</span>
+                                </label>
+                                <select
+                                    value={data.job_position_id}
+                                    onChange={e => {
+                                        const selectedId = e.target.value;
+                                        const selectedPosition = jobPositions?.find(p => String(p.id) === String(selectedId));
+                                        setData('job_position_id', selectedId);
+                                        setData('position', selectedPosition?.name || '');
+                                    }}
+                                    className={`w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm ${errors.job_position_id || errors.position ? 'border-red-300' : ''}`}
+                                >
+                                    <option value="">Pilih Jenis Jabatan</option>
+                                    {jobPositions?.map(position => (
+                                        <option key={position.id} value={position.id}>{position.name}</option>
+                                    ))}
+                                </select>
+                                {(errors.job_position_id || errors.position) && <p className="text-red-500 text-xs mt-1">{errors.job_position_id || errors.position}</p>}
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Hak Akses Approval <span className="text-red-400">*</span>
@@ -183,7 +204,7 @@ export default function EmployeeEdit({ employee, departments, units }) {
                                     <option value="staf">Staf (Tidak bisa approve)</option>
                                     <option value="koordinator">Koordinator (Approve level 1)</option>
                                     <option value="manajer">Manager (Approve level 2)</option>
-                                    <option value="direktur">Direktur (Langsung ke Admin)</option>
+                                    <option value="direktur">Kantor (Langsung ke Admin)</option>
                                 </select>
                                 <p className="text-slate-400 text-xs mt-1">Tentukan hak approval untuk pengajuan cuti & lembur di unit yang sama</p>
                                 {errors.approval_role && <p className="text-red-500 text-xs mt-1">{errors.approval_role}</p>}

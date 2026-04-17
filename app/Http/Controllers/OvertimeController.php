@@ -145,7 +145,7 @@ class OvertimeController extends Controller
         // KANTOR unit skips koordinator & manager, goes directly to admin (level 3)
         $userUnit = $request->user()->unitModel;
         $initialLevel = $request->user()->getInitialApprovalLevel();
-        if ($userUnit && strtoupper($userUnit->name) === 'KANTOR') {
+        if ($userUnit && strtoupper(trim($userUnit->name)) === 'KANTOR') {
             $initialLevel = 3;
         }
 
