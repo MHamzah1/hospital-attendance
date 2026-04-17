@@ -36,12 +36,13 @@ export default function EmployeeDashboard({ todayAttendance, stats, latestPayrol
             </div>
 
             {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 {[
                     { label: 'Hari Hadir', value: stats.presentDays, icon: '✅', bg: 'bg-emerald-50 text-emerald-700' },
                     { label: 'Terlambat', value: stats.lateDays, icon: '⏰', bg: 'bg-amber-50 text-amber-700' },
                     { label: 'Tidak Hadir', value: stats.absentDays, icon: '❌', bg: 'bg-red-50 text-red-700' },
                     { label: 'Cuti', value: stats.leaveDays, icon: '🏖️', bg: 'bg-blue-50 text-blue-700' },
+                    { label: 'Sisa Cuti', value: stats.remainingAnnualLeave ?? 0, icon: '🌿', bg: 'bg-teal-50 text-teal-700' },
                 ].map((s, i) => (
                     <div key={i} className="bg-white rounded-2xl border border-slate-200/60 p-5">
                         <div className="flex items-center gap-3">

@@ -85,6 +85,19 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
+        $jatahCuti = $user->jatah_cuti ?? 12;
+        $approvedAnnualLeave = LeaveRequest::where('user_id', $user->id)
+            ->where('type', 'cuti_tahunan')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $currentYear)
+            ->sum('total_days');
+        $pendingAnnualLeave = LeaveRequest::where('user_id', $user->id)
+            ->where('type', 'cuti_tahunan')
+            ->where('status', 'pending')
+            ->whereYear('start_date', $currentYear)
+            ->sum('total_days');
+        $remainingAnnualLeave = max(0, $jatahCuti - $approvedAnnualLeave - $pendingAnnualLeave);
+
         $latestPayroll = Payroll::where('user_id', $user->id)
             ->where('status', 'paid')
             ->latest('year')
@@ -102,6 +115,7 @@ class DashboardController extends Controller
                 'leaveDays' => $monthAttendances->where('status', 'leave')->count(),
                 'pendingLeaves' => $pendingLeaves,
                 'pendingOvertimes' => $pendingOvertimes,
+                'remainingAnnualLeave' => $remainingAnnualLeave,
             ],
             'latestPayroll' => $latestPayroll,
         ]);
