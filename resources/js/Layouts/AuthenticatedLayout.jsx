@@ -158,9 +158,17 @@ export default function AuthenticatedLayout({ header, children }) {
                     {/* User info */}
                     <div className="border-t border-white/10 p-4">
                         <div className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white">
-                                {user.name?.charAt(0)?.toUpperCase()}
-                            </div>
+                            {user.photo_url ? (
+                                <img
+                                    src={user.photo_url}
+                                    alt={user.name || 'Profile'}
+                                    className="h-9 w-9 rounded-lg object-cover ring-2 ring-white/20"
+                                />
+                            ) : (
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white">
+                                    {user.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                            )}
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-white truncate">{user.name}</p>
                                 <p className="text-[11px] text-slate-400 truncate">{isAdmin ? 'Admin SDM' : user.position || 'Karyawan'}</p>

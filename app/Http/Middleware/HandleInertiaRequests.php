@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -29,10 +30,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $userData = null;
+
+        if ($user) {
+            $user->load('departmentModel', 'unitModel');
+            $userData = $user->toArray();
+            $userData['photo_url'] = $user->photo ? Storage::disk('public')->url($user->photo) : null;
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? $request->user()->load('departmentModel', 'unitModel') : null,
+                'user' => $userData,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
