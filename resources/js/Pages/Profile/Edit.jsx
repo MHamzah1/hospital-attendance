@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import FlashMessage from '@/Components/FlashMessage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
@@ -7,7 +7,8 @@ import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 export default function Edit() {
     const { auth, flash } = usePage().props;
     const user = auth.user;
-    const [previewUrl, setPreviewUrl] = useState(user?.photo_url || null);
+    const persistedPhotoUrl = user?.photo_url || (user?.photo ? `/storage/${user.photo}` : null);
+    const [previewUrl, setPreviewUrl] = useState(persistedPhotoUrl);
     const [photoError, setPhotoError] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
     const fileInputRef = useRef(null);
@@ -22,8 +23,8 @@ export default function Edit() {
     });
 
     useEffect(() => {
-        setPreviewUrl(user?.photo_url || null);
-    }, [user?.photo_url]);
+        setPreviewUrl(persistedPhotoUrl);
+    }, [persistedPhotoUrl]);
 
     const initial = useMemo(() => user?.name?.charAt(0)?.toUpperCase() || '?', [user?.name]);
 
@@ -34,7 +35,7 @@ export default function Edit() {
         if (!file) {
             profileForm.setData('photo', null);
             profileForm.setData('remove_photo', false);
-            setPreviewUrl(user?.photo_url || null);
+            setPreviewUrl(persistedPhotoUrl);
             setCropSource(null);
             return;
         }
@@ -115,7 +116,7 @@ export default function Edit() {
             photo: croppedPhoto ?? data.photo,
         }));
 
-        profileForm.patch(route('profile.update'), {
+        profileForm.post(route('profile.photo.update'), {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
@@ -130,6 +131,9 @@ export default function Edit() {
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
+
+                // Ensure sidebar avatar (shared auth.user) updates immediately after upload.
+                router.reload({ only: ['auth', 'flash'] });
             },
             onFinish: () => {
                 profileForm.transform((data) => data);

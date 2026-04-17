@@ -55,6 +55,41 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update only profile photo (upload / remove).
+     */
+    public function updatePhoto(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_photo' => ['nullable', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $removePhoto = (bool) ($validated['remove_photo'] ?? false);
+
+        if (!$request->hasFile('photo') && !$removePhoto) {
+            return back()->withErrors(['photo' => 'Pilih foto terlebih dahulu atau gunakan opsi hapus foto profil.']);
+        }
+
+        if ($removePhoto && $user->photo) {
+            Storage::disk('public')->delete($user->photo);
+            $user->photo = null;
+        }
+
+        if ($request->hasFile('photo')) {
+            if ($user->photo) {
+                Storage::disk('public')->delete($user->photo);
+            }
+
+            $user->photo = $request->file('photo')->store('profile-photos', 'public');
+        }
+
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('success', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
      * Delete the user's account.
      */
     public function destroy(Request $request): RedirectResponse

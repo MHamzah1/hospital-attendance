@@ -85,6 +85,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const user = auth.user;
     const isAdmin = user.role === 'admin_sdm';
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const profilePhotoSrc = user.photo_url || (user.photo ? `/storage/${user.photo}` : null);
 
     const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
 
@@ -158,9 +159,9 @@ export default function AuthenticatedLayout({ header, children }) {
                     {/* User info */}
                     <div className="border-t border-white/10 p-4">
                         <div className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3">
-                            {user.photo_url ? (
+                            {profilePhotoSrc ? (
                                 <img
-                                    src={user.photo_url}
+                                    src={profilePhotoSrc}
                                     alt={user.name || 'Profile'}
                                     className="h-9 w-9 rounded-lg object-cover ring-2 ring-white/20"
                                 />
