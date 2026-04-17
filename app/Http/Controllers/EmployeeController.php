@@ -8,6 +8,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -42,6 +43,10 @@ class EmployeeController extends Controller
         }
 
         $employees = $query->latest()->paginate(15);
+        $employees->getCollection()->transform(function ($employee) {
+            $employee->photo_url = $employee->photo ? Storage::disk('public')->url($employee->photo) : null;
+            return $employee;
+        });
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
         $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
