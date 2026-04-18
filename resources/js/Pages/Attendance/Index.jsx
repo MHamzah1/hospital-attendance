@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FlashMessage from '@/Components/FlashMessage';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -13,6 +13,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+    const cameraConstraints = { video: { facingMode: 'user', width: 640, height: 480 } };
 
     const [dateFrom, setDateFrom] = useState(filters.date_from);
     const [dateTo, setDateTo] = useState(filters.date_to);
@@ -25,18 +26,29 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
         setCameraOpen(true);
         setCapturedPhoto(null);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: 640, height: 480 }
-            });
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(t => t.stop());
+            }
+            const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(() => {});
             }
         } catch (err) {
             alert('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.');
             setCameraOpen(false);
         }
-    }, []);
+    }, [cameraConstraints]);
+
+    useEffect(() => {
+        // Re-attach stream after video element is re-rendered (e.g. setelah klik Ulangi)
+        if (!cameraOpen || capturedPhoto || !streamRef.current || !videoRef.current) return;
+        if (videoRef.current.srcObject !== streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+            videoRef.current.play().catch(() => {});
+        }
+    }, [cameraOpen, capturedPhoto]);
 
     const takePhoto = useCallback(() => {
         const video = videoRef.current;
@@ -54,10 +66,32 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
     const stopCamera = useCallback(() => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(t => t.stop());
+            streamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
         }
         setCameraOpen(false);
         setCapturedPhoto(null);
     }, []);
+
+    const retryPhoto = useCallback(async () => {
+        setCapturedPhoto(null);
+
+        const hasActiveTrack = streamRef.current?.getTracks().some(track => track.readyState === 'live');
+        if (hasActiveTrack) return;
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(() => {});
+            }
+        } catch (err) {
+            alert('Kamera gagal diaktifkan ulang. Silakan coba lagi.');
+        }
+    }, [cameraConstraints]);
 
     const submitAttendance = useCallback(() => {
         if (!capturedPhoto) return;
@@ -203,7 +237,7 @@ export default function AttendanceIndex({ attendances, todayAttendance, todaySch
                                     <img src={capturedPhoto} alt="Preview" className="w-full rounded-xl" style={{ transform: 'scaleX(-1)' }} />
                                     <div className="flex gap-3 mt-4">
                                         <button
-                                            onClick={() => setCapturedPhoto(null)}
+                                            onClick={retryPhoto}
                                             className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold transition-colors"
                                         >
                                             Ulangi
