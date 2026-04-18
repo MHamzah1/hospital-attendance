@@ -42,8 +42,8 @@
         <br>
         @endif
         <h1>RUMAH SAKIT KARTIKA HUSADA SETU</h1>
-        <h2>Jl. Raya Serang - Cibarusah KM.29, Setu, Bekasi</h2>
-        <p>Telp: (021) 89956215 | Email: rskartikahusadasetu@gmail.com</p>
+        <h2>Jl. MT. Haryono, Burangkeng, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320</h2>
+        <p>Telp: (021) 1234567 | Email: rskartikahusadasetu@gmail.com</p>
     </div>
 
     <div class="slip-title">SLIP GAJI KARYAWAN — {{ strtoupper($monthName) }} {{ $payroll->year }}</div>

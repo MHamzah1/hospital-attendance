@@ -140,7 +140,10 @@ export default function PayrollImport({ flash }) {
                     router.visit('/payroll');
                 }, 2000);
             } else {
-                alert('Error: ' + data.message);
+                const details = Array.isArray(data.errors) && data.errors.length
+                    ? `\n\nDetail error:\n- ${data.errors.slice(0, 10).join('\n- ')}`
+                    : '';
+                alert('Error: ' + data.message + details);
             }
         } catch (error) {
             alert('Error: ' + error.message);

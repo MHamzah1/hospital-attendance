@@ -510,7 +510,7 @@ const SlipGajiPDF = ({ payroll, cutiInfo, qrDataUrl }) => {
                     <DetailRow label="Alpha / Ketidakhadiran" value={p.alpha_deduction} />
                     <DetailRow label="Cashbond" value={p.cashbond_deduction} />
                     <DetailRow label="Piutang Obat" value={p.piutang_obat_deduction} />
-                    <DetailRow label="Koreksi Upah (-)" value={p.salary_correction_deduction} />
+                    <DetailRow label="Koreksi Upah" value={p.salary_correction_deduction} />
                     <DetailRow label="Adm. Bank" value={p.bank_admin_deduction} />
                     <DetailRow label="Potongan Lainnya" value={p.other_deduction} />
                     <TotalRowComp label="TOTAL POTONGAN" value={p.total_deduction} />

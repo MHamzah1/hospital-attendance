@@ -166,6 +166,14 @@ class PayrollImportController extends Controller
             ], 422);
         }
 
+        // Wajib sinkron dengan format template: harus ada kolom NIP dan Nama
+        if (empty($mapping['employee_id']) || empty($mapping['_nama'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom wajib belum lengkap. Pastikan kolom NIP dan Nama sudah dipetakan dengan benar.',
+            ], 422);
+        }
+
         // Validate file extension manually to support xlsm
         $allowedExtensions = ['csv', 'xlsx', 'xls', 'xlsm'];
         $extension = $request->file('file')->getClientOriginalExtension();
@@ -270,12 +278,17 @@ class PayrollImportController extends Controller
                 }
             }
 
+            $success = empty($errors);
+            $message = $success
+                ? "Berhasil import $imported penggajian untuk " . $this->getMonthName($month) . " $year"
+                : "Import ditemukan ketidaksesuaian data (NIP/Nama). Berhasil: $imported, Gagal: " . count($errors);
+
             return response()->json([
-                'success' => true,
-                'message' => "Berhasil import $imported penggajian untuk " . $this->getMonthName($month) . " $year",
+                'success' => $success,
+                'message' => $message,
                 'imported' => $imported,
                 'errors' => $errors,
-            ]);
+            ], $success ? 200 : 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -393,6 +406,9 @@ class PayrollImportController extends Controller
             'bpjs_kesehatan', 'bpjs_ketenagakerjaan', 'bpjs_pensiun_jp',
         ];
 
+        $importedName = null;
+        $matchedEmployee = null;
+
         foreach ($mapping as $field => $colIndex) {
             if ($colIndex === null || !isset($row[$colIndex - 1])) {
                 continue;
@@ -403,13 +419,21 @@ class PayrollImportController extends Controller
             if (in_array($field, $numericFields)) {
                 $data[$field] = $this->parseNumeric($value);
             } elseif ($field === 'employee_id') {
-                $employee = User::where('nip', $value)
-                    ->orWhere('employee_id', $value)
+                $identifier = trim((string) $value);
+                if ($identifier === '') {
+                    throw new \Exception('NIP/Employee ID kosong');
+                }
+
+                $employee = User::where('nip', $identifier)
+                    ->orWhere('employee_id', $identifier)
                     ->first();
                 if (!$employee) {
-                    throw new \Exception("Karyawan dengan NIP '$value' tidak ditemukan");
+                    throw new \Exception("Karyawan dengan NIP/Employee ID '$identifier' tidak ditemukan");
                 }
                 $data['user_id'] = $employee->id;
+                $matchedEmployee = $employee;
+            } elseif ($field === '_nama') {
+                $importedName = trim((string) $value);
             }
         }
 
@@ -417,7 +441,26 @@ class PayrollImportController extends Controller
             throw new \Exception('Karyawan ID tidak valid atau tidak ditemukan');
         }
 
+        if ($importedName === null || $importedName === '') {
+            throw new \Exception('Kolom Nama kosong');
+        }
+
+        if (!$matchedEmployee) {
+            throw new \Exception('Data karyawan tidak ditemukan untuk validasi Nama');
+        }
+
+        if ($this->normalizeText($importedName) !== $this->normalizeText($matchedEmployee->name)) {
+            throw new \Exception("Nama tidak sinkron untuk NIP '{$matchedEmployee->nip}'. Excel: '{$importedName}', Sistem: '{$matchedEmployee->name}'");
+        }
+
         return $data;
+    }
+
+    private function normalizeText(string $text): string
+    {
+        $normalized = mb_strtolower(trim($text));
+        $normalized = preg_replace('/\s+/', ' ', $normalized);
+        return preg_replace('/[^\p{L}\p{N} ]/u', '', $normalized) ?? '';
     }
 
     private function getMonthName($month)

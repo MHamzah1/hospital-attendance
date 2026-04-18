@@ -73,11 +73,6 @@ export default function SlipGaji({ payroll, cutiInfo }) {
                                 </PDFDownloadLink>
                             )}
                         </Suspense>
-                        <a href={`/payroll/${p.id}/export-pdf`} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-red-500/30">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                            Export PDF
-                        </a>
                         <a href={`/payroll/${p.id}/export-excel`} target="_blank" rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-600/30">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -91,7 +86,7 @@ export default function SlipGaji({ payroll, cutiInfo }) {
                     <div className="bg-gradient-to-r from-[#0f2027] via-[#203a43] to-[#2c5364] p-8 text-white text-center">
                         <img src="/logo.png" alt="Logo" className="h-14 mx-auto mb-2" onError={(e) => { e.target.style.display = 'none'; }} />
                         <h1 className="text-xl font-bold tracking-wide">RUMAH SAKIT KARTIKA HUSADA SETU</h1>
-                        <p className="text-slate-300 text-sm mt-1">Jl. Raya Serang - Cibarusah KM.29, Setu, Bekasi</p>
+                        <p className="text-slate-300 text-sm mt-1">Jl. MT. Haryono, Burangkeng, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320 | Telp: (021) 1234567</p>
                         <div className="mt-4 inline-block bg-white/10 backdrop-blur px-6 py-2 rounded-full">
                             <p className="text-sm font-semibold">SLIP GAJI KARYAWAN — {months[p.month]?.toUpperCase()} {p.year}</p>
                         </div>
@@ -217,12 +212,12 @@ export default function SlipGaji({ payroll, cutiInfo }) {
                             <SalaryRow label="Alpha / Ketidakhadiran" value={p.alpha_deduction} isDeduction />
                             <SalaryRow label="Cashbond" value={p.cashbond_deduction} isDeduction />
                             <SalaryRow label="Piutang Obat" value={p.piutang_obat_deduction} isDeduction />
-                            <SalaryRow label="Koreksi Upah (-)" value={p.salary_correction_deduction} isDeduction />
+                            <SalaryRow label="Koreksi Upah" value={p.salary_correction_deduction} isDeduction />
                             <SalaryRow label="Adm. Bank" value={p.bank_admin_deduction} isDeduction />
                             <SalaryRow label="Potongan Lainnya" value={p.other_deduction} isDeduction />
                             <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-red-200">
                                 <span className="font-bold text-slate-800 text-sm">TOTAL POTONGAN</span>
-                                <span className="font-bold text-lg text-red-600">- Rp {fmt(p.total_deduction)}</span>
+                                <span className="font-bold text-lg text-red-600">Rp {fmt(p.total_deduction)}</span>
                             </div>
                         </div>
                     </div>
@@ -249,8 +244,7 @@ export default function SlipGaji({ payroll, cutiInfo }) {
                             <p className="text-xs text-slate-500 mb-1">Bekasi, {new Date().getDate()} {months[p.month]} {p.year}</p>
                             <p className="text-sm text-slate-500 mb-14">Disetujui oleh,</p>
                             <p className="font-bold text-slate-800 border-b border-slate-300 inline-block pb-1 px-8">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
-                            <p className="text-xs text-slate-500 mt-1">HRD</p>
-                            <p className="text-xs text-slate-500">Admin SDM</p>
+                            <p className="text-xs text-slate-500 mt-1">HRD / Admin SDM</p>
                         </div>
                     </div>
 
@@ -284,7 +278,7 @@ function SalaryRow({ label, value, isDeduction = false }) {
         <div className="flex justify-between items-center py-1.5">
             <span className="text-sm text-slate-600">{label}</span>
             <span className={`text-sm font-mono font-medium ${isDeduction ? 'text-red-600' : 'text-slate-700'}`}>
-                {isDeduction ? '- ' : ''}Rp {fmt(value)}
+                Rp {fmt(value)}
             </span>
         </div>
     );

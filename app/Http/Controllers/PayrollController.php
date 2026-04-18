@@ -198,7 +198,12 @@ class PayrollController extends Controller
         $biayaJabatan        = min($annualGross * 0.05, 6000000);
         $ptkp                = 54000000; // TK/0
         $annualTaxableIncome = $annualGross - $annualBPJS - $biayaJabatan - $ptkp;
-        $pph21               = Payroll::calculatePPh21($annualTaxableIncome);
+        // Prioritaskan nilai PPh21 yang sudah di-import/manual untuk periode ini.
+        // Jika belum ada record existing, fallback ke hitung otomatis.
+        $pph21               = $existing?->pph21;
+        if ($pph21 === null) {
+            $pph21 = Payroll::calculatePPh21($annualTaxableIncome);
+        }
 
         // Total Potongan
         $totalDeduction = $bpjsKesehatan + $bpjsKetenagakerjaan + $bpjsPensiunJp
