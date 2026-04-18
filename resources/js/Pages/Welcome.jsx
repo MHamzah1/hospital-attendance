@@ -5,7 +5,7 @@ export default function Welcome({ auth }) {
         <>
             <Head title="Selamat Datang" />
             <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-900 selection:bg-emerald-500 selection:text-white">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2653&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-20"></div>
+                <div className="absolute inset-0 bg-[url('/Background.jpg')] bg-cover bg-center bg-no-repeat opacity-25"></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
 
                 <div className="relative z-10 w-full max-w-5xl px-6 lg:px-8 flex flex-col min-h-screen">
