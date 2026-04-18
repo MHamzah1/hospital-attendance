@@ -166,7 +166,7 @@ export default function DepartmentIndex({ departments, managers, jobPositions })
                             <input
                                 type="text"
                                 value={newJobPositionName}
-                                onChange={(e) => setNewJobPositionName(e.target.value)}
+                                onChange={(e) => setNewJobPositionName(e.target.value.toUpperCase())}
                                 placeholder="Contoh: KOORDINATOR RAWAT INAP"
                                 className="flex-1 rounded-lg border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
                             />
@@ -310,7 +310,7 @@ export default function DepartmentIndex({ departments, managers, jobPositions })
                             <tbody className="divide-y divide-slate-100">
                                 {jobPositions?.map((position) => (
                                     <tr key={position.id} className="hover:bg-slate-50/50">
-                                        <td className="px-6 py-3.5 font-medium text-slate-800">{position.name}</td>
+                                        <td className="px-6 py-3.5 font-medium text-slate-800">{position.name?.toUpperCase()}</td>
                                         <td className="px-6 py-3.5 text-slate-600">{position.users_count} orang</td>
                                         <td className="px-6 py-3.5 text-center">
                                             <button

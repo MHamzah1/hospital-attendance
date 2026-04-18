@@ -99,12 +99,18 @@ class DepartmentController extends Controller
 
     public function storeJobPosition(Request $request)
     {
-        $validated = $request->validate([
+        $normalizedName = $this->normalizeJobPositionName(
+            $this->normalizeName($request->input('name'))
+        );
+
+        $validated = validator([
+            'name' => $normalizedName,
+        ], [
             'name' => ['required', 'string', 'max:255', 'unique:job_positions,name'],
-        ]);
+        ])->validate();
 
         JobPosition::create([
-            'name' => trim($validated['name']),
+            'name' => $validated['name'],
         ]);
 
         return back()->with('success', 'Jenis jabatan berhasil ditambahkan.');
@@ -162,7 +168,9 @@ class DepartmentController extends Controller
                 foreach (array_slice($rows, $headerIndex + 1) as $row) {
                     $departmentName = $departmentCol !== null ? $this->normalizeDepartmentName($this->normalizeName($row[$departmentCol] ?? null)) : null;
                     $unitName = $unitCol !== null ? $this->normalizeName($row[$unitCol] ?? null) : null;
-                    $positionName = $positionCol !== null ? $this->normalizeName($row[$positionCol] ?? null) : null;
+                    $positionName = $positionCol !== null
+                        ? $this->normalizeJobPositionName($this->normalizeName($row[$positionCol] ?? null))
+                        : null;
 
                     if (!$departmentName && !$unitName && !$positionName) {
                         continue;
@@ -256,5 +264,14 @@ class DepartmentController extends Controller
         }
 
         return $upperName;
+    }
+
+    private function normalizeJobPositionName(?string $name): ?string
+    {
+        if (!$name) {
+            return null;
+        }
+
+        return strtoupper($name);
     }
 }
