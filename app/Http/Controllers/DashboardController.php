@@ -104,6 +104,18 @@ class DashboardController extends Controller
             ->latest('month')
             ->first();
 
+        $retirementInfo = null;
+        if (!empty($user->birth_date)) {
+            $birthDate = Carbon::parse($user->birth_date);
+            $retirementDate = $birthDate->copy()->addYears(60);
+
+            $retirementInfo = [
+                'retirementDate' => $retirementDate->toDateString(),
+                'isRetired' => $today->greaterThanOrEqualTo($retirementDate),
+                'remainingYears' => $today->diffInYears($retirementDate, false),
+            ];
+        }
+
         return Inertia::render('Dashboard', [
             'role' => 'employee',
             'todayAttendance' => $todayAttendance,
@@ -118,6 +130,7 @@ class DashboardController extends Controller
                 'remainingAnnualLeave' => $remainingAnnualLeave,
             ],
             'latestPayroll' => $latestPayroll,
+            'retirementInfo' => $retirementInfo,
         ]);
     }
 }

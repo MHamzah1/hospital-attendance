@@ -2,11 +2,21 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FlashMessage from '@/Components/FlashMessage';
 import { Head, Link, usePage } from '@inertiajs/react';
 
-export default function EmployeeDashboard({ todayAttendance, stats, latestPayroll }) {
+export default function EmployeeDashboard({ todayAttendance, stats, latestPayroll, retirementInfo }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
     const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
+    const formatDate = (date) => new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const retirementDateFallback = user?.birth_date
+        ? new Date(new Date(user.birth_date).setFullYear(new Date(user.birth_date).getFullYear() + 60))
+        : null;
+    const retirementDate = retirementInfo?.retirementDate
+        ? new Date(retirementInfo.retirementDate)
+        : retirementDateFallback;
+    const retirementDateText = retirementDate && !Number.isNaN(retirementDate.getTime())
+        ? formatDate(retirementDate)
+        : '-';
 
     return (
         <AuthenticatedLayout header="Dashboard">
@@ -36,19 +46,20 @@ export default function EmployeeDashboard({ todayAttendance, stats, latestPayrol
             </div>
 
             {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
                 {[
                     { label: 'Hari Hadir', value: stats.presentDays, icon: '✅', bg: 'bg-emerald-50 text-emerald-700' },
                     { label: 'Terlambat', value: stats.lateDays, icon: '⏰', bg: 'bg-amber-50 text-amber-700' },
                     { label: 'Tidak Hadir', value: stats.absentDays, icon: '❌', bg: 'bg-red-50 text-red-700' },
                     { label: 'Cuti', value: stats.leaveDays, icon: '🏖️', bg: 'bg-blue-50 text-blue-700' },
                     { label: 'Sisa Cuti', value: stats.remainingAnnualLeave ?? 0, icon: '🌿', bg: 'bg-teal-50 text-teal-700' },
+                    { label: 'Perkiraan Pensiun', value: retirementDateText, icon: '🧓', bg: 'bg-indigo-50 text-indigo-700', isText: true },
                 ].map((s, i) => (
                     <div key={i} className="bg-white rounded-2xl border border-slate-200/60 p-5">
                         <div className="flex items-center gap-3">
                             <span className={`text-lg p-2.5 rounded-xl ${s.bg}`}>{s.icon}</span>
                             <div>
-                                <p className="text-2xl font-extrabold text-slate-800">{s.value}</p>
+                                <p className={`${s.isText ? 'text-sm' : 'text-2xl'} font-extrabold text-slate-800`}>{s.value}</p>
                                 <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                             </div>
                         </div>
@@ -132,6 +143,25 @@ export default function EmployeeDashboard({ todayAttendance, stats, latestPayrol
                         </div>
                     )}
                 </div>
+            </div>
+
+            <div className="mt-6 bg-white rounded-2xl border border-slate-200/60 p-6">
+                <h3 className="font-bold text-slate-800 mb-2">Informasi Pensiun</h3>
+                {retirementInfo?.retirementDate ? (
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-slate-600">
+                            Perkiraan tanggal pensiun
+                        </p>
+                        <div className="text-right">
+                            <p className="text-lg font-extrabold text-slate-800">{formatDate(retirementInfo.retirementDate)}</p>
+                            <p className={`text-xs font-medium ${retirementInfo.isRetired ? 'text-red-600' : 'text-emerald-600'}`}>
+                                {retirementInfo.isRetired ? 'Sudah memasuki usia pensiun' : `Sisa ${retirementInfo.remainingYears} tahun lagi`}
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-slate-500">Tanggal lahir belum tersedia, perkiraan tanggal pensiun belum dapat dihitung.</p>
+                )}
             </div>
         </AuthenticatedLayout>
     );
