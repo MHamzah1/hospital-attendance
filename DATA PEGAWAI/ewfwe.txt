@@ -1,0 +1,16 @@
+untuk beberapa jenis bayar dibawah yang saya tulis tidak perlu di cantumkan, saya hanya mau filter dari Asuransi/PT/CV
+1. BPJS
+2. UMUM
+3. RS KARTIKA HUSADA TAMBUN
+4. PRO JKN
+5. KARYAWAN 
+6. KELUARGA KARYAWAN
+7. PRO JAMKESDA
+8. KLINIK YULIARPAN MEDIKA
+9. KARYAWAN RS
+10. JAMKESDA KABUPATEN BEKASI
+11. KLINIK PRATAMA SAFANA MEDIKA
+
+
+filter datanya dari alamatnya terlebih dahulu, lalu filter data juga seperti jenis kelamin permasing alamat/wilayah, lalu filter data juga permasing poliklinik
+contoh GSP 1, 5 Laki-laki 3 Perempuuan, IGD 2, OBGYN 3, THT 5, dan seterusnya
