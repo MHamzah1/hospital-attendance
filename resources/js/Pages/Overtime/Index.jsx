@@ -36,6 +36,26 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
         return false;
     };
 
+    // Tentukan siapa yang terakhir bertindak (approve/reject) dan catatannya
+    const getKeterangan = (ot) => {
+        if (ot.status === 'rejected') {
+            if (ot.coordinator_approved_by && !ot.manager_approved_by && !ot.approved_by) {
+                return { by: `Koordinator (${ot.coordinator_approver?.name || '-'})`, note: ot.coordinator_notes };
+            }
+            if (ot.manager_approved_by && !ot.approved_by) {
+                return { by: `Manager (${ot.manager_approver?.name || '-'})`, note: ot.manager_notes };
+            }
+            if (ot.approved_by) {
+                return { by: `Admin (${ot.approver?.name || '-'})`, note: ot.admin_notes };
+            }
+            return { by: '-', note: ot.admin_notes || ot.manager_notes || ot.coordinator_notes };
+        }
+        if (ot.status === 'approved') {
+            return { by: `Admin (${ot.approver?.name || '-'})`, note: ot.admin_notes };
+        }
+        return null;
+    };
+
     const CATEGORY_LABELS = {
         lembur:    'Lembur',
         on_call:   'On Call',
@@ -44,7 +64,7 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
     };
     const CATEGORY_COLORS = {
         lembur:    'bg-blue-50 text-blue-700',
-        on_call:   'bg-amber-50 text-amber-700',
+        on_call:   'bg-green-50 text-green-700',
         mod:       'bg-orange-50 text-orange-700',
         hari_raya: 'bg-red-50 text-red-700',
     };
@@ -240,12 +260,13 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[300px]">Alasan</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tahap Approval</th>
+                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[220px]">Keterangan</th>
                                 {isApprover && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {overtimes?.data?.length === 0 ? (
-                                <tr><td colSpan={isAdmin ? 12 : isApprover ? 11 : 8} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
+                                <tr><td colSpan={isAdmin ? 13 : isApprover ? 12 : 9} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan lembur</td></tr>
                             ) : (
                                 overtimes?.data?.map((ot) => (
                                     <tr key={ot.id} className="hover:bg-slate-50/50 transition-colors">
@@ -287,6 +308,18 @@ export default function OvertimeIndex({ overtimes, filters, units, departments }
                                                     {statusLabels[ot.status]}
                                                 </span>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-3.5 text-slate-600 text-xs min-w-[220px] whitespace-normal break-words">
+                                            {(() => {
+                                                const ket = getKeterangan(ot);
+                                                if (!ket) return '-';
+                                                return (
+                                                    <>
+                                                        <span className="font-medium text-slate-700">{ket.by}</span>
+                                                        {ket.note && <><br /><span className="text-slate-500">"{ket.note}"</span></>}
+                                                    </>
+                                                );
+                                            })()}
                                         </td>
                                         {isApprover && (
                                             <td className="px-6 py-3.5">

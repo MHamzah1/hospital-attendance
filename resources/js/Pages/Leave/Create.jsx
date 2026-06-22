@@ -9,13 +9,24 @@ export default function LeaveCreate({ typeLabels }) {
         end_date: '',
         reason: '',
     });
+    const [attachment, setAttachment] = useState(null);
     const [errors, setErrors] = useState({});
     const [processing, setProcessing] = useState(false);
+
+    const isSickLeave = form.type === 'cuti_sakit';
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setProcessing(true);
-        router.post('/leaves', form, {
+
+        const formData = new FormData();
+        Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+        if (attachment) {
+            formData.append('attachment', attachment);
+        }
+
+        router.post('/leaves', formData, {
+            forceFormData: true,
             onError: (errs) => setErrors(errs),
             onFinish: () => setProcessing(false),
         });
@@ -86,6 +97,22 @@ export default function LeaveCreate({ typeLabels }) {
                             />
                             {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
                         </div>
+
+                        {isSickLeave && (
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                    Lampiran Surat Sakit <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={e => setAttachment(e.target.files[0] || null)}
+                                    className="w-full rounded-xl border-slate-200 text-sm focus:ring-emerald-500 focus:border-emerald-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-sm file:font-medium"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Format PDF, JPG, atau PNG. Maks. 5 MB.</p>
+                                {errors.attachment && <p className="text-red-500 text-xs mt-1">{errors.attachment}</p>}
+                            </div>
+                        )}
 
                         <div className="flex gap-3 pt-2">
                             <Link href="/leaves" className="flex-1 py-3 text-center rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition-colors">

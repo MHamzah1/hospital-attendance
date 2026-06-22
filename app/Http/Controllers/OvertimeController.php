@@ -323,7 +323,7 @@ class OvertimeController extends Controller
                 ? [$i + 1,
                    $ot->user?->name ?? '-',
                    $ot->user?->nip ?? '-',
-                   $ot->user?->unit_model?->name ?? '-',
+                   $ot->user?->unitModel?->name ?? '-',
                    Carbon::parse($ot->date)->format('d/m/Y'),
                    $ot->start_time ?? '-',
                    $ot->end_time ?? '-',

@@ -4,10 +4,10 @@ import { Head, router, Link } from '@inertiajs/react';
 
 export default function OvertimeCreate() {
     const CATEGORIES = [
-        { key: 'lembur',    label: 'Lembur',    icon: '⏰', color: 'bg-blue-50 border-blue-400 text-blue-700' },
-        { key: 'on_call',   label: 'On Call',   icon: '📞', color: 'bg-amber-50 border-amber-400 text-amber-700' },
-        { key: 'mod',       label: 'MOD',       icon: '🏥', color: 'bg-orange-50 border-orange-400 text-orange-700' },
-        { key: 'hari_raya', label: 'Hari Raya', icon: '🎉', color: 'bg-red-50 border-red-400 text-red-700' },
+        { key: 'lembur',    label: 'Lembur',    icon: '', color: 'bg-blue-50 border-blue-400 text-blue-700' },
+        { key: 'on_call',   label: 'On Call',   icon: '', color: 'bg-green-50 border-green-400 text-green-700' },
+        { key: 'mod',       label: 'MOD',       icon: '', color: 'bg-orange-50 border-orange-400 text-orange-700' },
+        { key: 'hari_raya', label: 'Hari Raya', icon: '', color: 'bg-red-50 border-red-400 text-red-700' },
     ];
 
     const [form, setForm] = useState({

@@ -34,6 +34,26 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
         return false;
     };
 
+    // Tentukan siapa yang terakhir bertindak (approve/reject) dan catatannya
+    const getKeterangan = (leave) => {
+        if (leave.status === 'rejected') {
+            if (leave.coordinator_approved_by && !leave.manager_approved_by && !leave.approved_by) {
+                return { by: `Koordinator (${leave.coordinator_approver?.name || '-'})`, note: leave.coordinator_notes };
+            }
+            if (leave.manager_approved_by && !leave.approved_by) {
+                return { by: `Manager (${leave.manager_approver?.name || '-'})`, note: leave.manager_notes };
+            }
+            if (leave.approved_by) {
+                return { by: `Admin (${leave.approver?.name || '-'})`, note: leave.admin_notes };
+            }
+            return { by: '-', note: leave.admin_notes || leave.manager_notes || leave.coordinator_notes };
+        }
+        if (leave.status === 'approved') {
+            return { by: `Admin (${leave.approver?.name || '-'})`, note: leave.admin_notes };
+        }
+        return null;
+    };
+
     const buildParams = (overrides = {}) => {
         const base = {
             status: filters.status || 'all',
@@ -224,12 +244,13 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[300px]">Alasan</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
                                 <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Tahap Approval</th>
+                                <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[220px]">Keterangan</th>
                                 {isApprover && <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {leaves?.data?.length === 0 ? (
-                                <tr><td colSpan={isApprover ? 9 : 7} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan cuti</td></tr>
+                                <tr><td colSpan={isApprover ? 10 : 8} className="px-6 py-12 text-center text-slate-400">Tidak ada data pengajuan cuti</td></tr>
                             ) : (
                                 leaves?.data?.map((leave) => (
                                     <tr key={leave.id} className="hover:bg-slate-50/50 transition-colors">
@@ -240,7 +261,23 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                             {new Date(leave.start_date).toLocaleDateString('id-ID')} - {new Date(leave.end_date).toLocaleDateString('id-ID')}
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600">{leave.total_days} hari</td>
-                                        <td className="px-6 py-3.5 text-slate-600 min-w-[300px] whitespace-normal break-words">{leave.reason}</td>
+                                        <td className="px-6 py-3.5 text-slate-600 min-w-[300px] whitespace-normal break-words">
+                                            {leave.reason}
+                                            {leave.attachment_url && (
+                                                <>
+                                                    <br />
+                                                    <a
+                                                        href={leave.attachment_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 10-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                                        Lihat Lampiran
+                                                    </a>
+                                                </>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-3.5">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[leave.status]}`}>
                                                 {statusLabels[leave.status]}
@@ -256,6 +293,18 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                                     {statusLabels[leave.status]}
                                                 </span>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-3.5 text-slate-600 text-xs min-w-[220px] whitespace-normal break-words">
+                                            {(() => {
+                                                const ket = getKeterangan(leave);
+                                                if (!ket) return '-';
+                                                return (
+                                                    <>
+                                                        <span className="font-medium text-slate-700">{ket.by}</span>
+                                                        {ket.note && <><br /><span className="text-slate-500">"{ket.note}"</span></>}
+                                                    </>
+                                                );
+                                            })()}
                                         </td>
                                         {isApprover && (
                                             <td className="px-6 py-3.5">
@@ -274,13 +323,7 @@ export default function LeaveIndex({ leaves, filters, typeLabels, units, departm
                                                             Tolak
                                                         </button>
                                                     </div>
-                                                ) : (
-                                                    leave.status !== 'pending' && (
-                                                        <span className="text-xs text-slate-400">
-                                                            {leave.approver?.name && `oleh ${leave.approver.name}`}
-                                                        </span>
-                                                    )
-                                                )}
+                                                ) : null}
                                             </td>
                                         )}
                                     </tr>

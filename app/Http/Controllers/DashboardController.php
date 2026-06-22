@@ -42,7 +42,13 @@ class DashboardController extends Controller
                 ->where('status', 'pending')
                 ->latest()
                 ->take(5)
-                ->get();
+                ->get()
+                ->map(function ($ot) {
+                    $ot->date_formatted = $ot->date->format('d M Y');
+                    $ot->start_time = substr($ot->start_time, 0, 5);
+                    $ot->end_time = substr($ot->end_time, 0, 5);
+                    return $ot;
+                });
 
             // Monthly attendance stats
             $monthlyStats = Attendance::whereMonth('date', $currentMonth)
@@ -108,11 +114,23 @@ class DashboardController extends Controller
         if (!empty($user->birth_date)) {
             $birthDate = Carbon::parse($user->birth_date);
             $retirementDate = $birthDate->copy()->addYears(60);
+            $isRetired = $today->greaterThanOrEqualTo($retirementDate);
+
+            if ($isRetired) {
+                $remainingText = null;
+            } else {
+                $diff = $today->diff($retirementDate);
+                $parts = [];
+                if ($diff->y > 0) $parts[] = $diff->y . ' tahun';
+                if ($diff->m > 0) $parts[] = $diff->m . ' bulan';
+                if ($diff->d > 0) $parts[] = $diff->d . ' hari';
+                $remainingText = $parts ? implode(' ', $parts) . ' lagi' : 'Kurang dari 1 hari lagi';
+            }
 
             $retirementInfo = [
                 'retirementDate' => $retirementDate->toDateString(),
-                'isRetired' => $today->greaterThanOrEqualTo($retirementDate),
-                'remainingYears' => $today->diffInYears($retirementDate, false),
+                'isRetired' => $isRetired,
+                'remainingText' => $remainingText,
             ];
         }
 

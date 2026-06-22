@@ -36,7 +36,7 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $user->load('departmentModel', 'unitModel');
             $userData = $user->toArray();
-            $userData['photo_url'] = $user->photo ? Storage::disk('public')->url($user->photo) : null;
+            $userData['photo_url'] = $user->photo ? '/storage/' . $user->photo : null;
         }
 
         return [

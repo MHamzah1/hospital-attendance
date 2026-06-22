@@ -80,20 +80,6 @@ export default function DepartmentIndex({ departments, managers, jobPositions })
                     <p className="text-slate-500 mt-1">Kelola struktur organisasi dan assignment manager per unit</p>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                    <div>
-                        <p className="font-semibold text-slate-800">Sinkron Master dari Excel</p>
-                        <p className="text-sm text-slate-500">Baca data Departemen, Unit, dan Jabatan dari file DEPARTEMEN.xlsx</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleSyncFromExcel}
-                        className="px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
-                    >
-                        Sinkron dari DEPARTEMEN.xlsx
-                    </button>
-                </div>
-
                 {/* Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
@@ -332,23 +318,6 @@ export default function DepartmentIndex({ departments, managers, jobPositions })
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                {/* Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-                    <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Tentang Alur Approval
-                    </h4>
-                    <ul className="text-sm text-blue-700 space-y-1 ml-7 list-disc">
-                        <li><strong>Staf</strong> mengajukan → Koordinator di unit yang sama → Manager yang ditugaskan → Admin</li>
-                        <li><strong>Staf Unit KANTOR</strong> mengajukan → langsung ke Admin (Approval Level 3)</li>
-                        <li><strong>Koordinator</strong> mengajukan → Manager yang ditugaskan → Admin</li>
-                        <li><strong>Manager / Direktur</strong> mengajukan → Langsung ke Admin</li>
-                        <li>Assign manager di kolom "Manager Penanggung Jawab" agar alur approval berjalan otomatis</li>
-                    </ul>
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -98,9 +98,37 @@ export default function Login({ status, canResetPassword }) {
                 </button>
 
                 
-                <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
-                        &copy; {new Date().getFullYear()} Created by <span className="text-emerald-400 font-medium">Wahyu Ardiansyah</span>
-                    </footer>
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 space-y-2">
+                    <p className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                        ⚠️ NOTE
+                    </p>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                        1. Penggunaan Sistem ini <strong>DILARANG</strong> menggunakan Handphone.
+                    </p>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                        2. Jika ada kendala, hubungi <strong>ADMIN / HRD</strong>{' '}
+                        
+                        <a  href="https://wa.me/6289676658564"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-green-700 underline hover:text-green-800 break-all"
+                        >
+                            089676658564
+                        </a>.
+                    </p>
+                </div>
+
+                <footer className="border-t border-white/10 pt-4 text-center text-sm text-slate-400">
+                    &copy; {new Date().getFullYear()} Created by{' '}
+                    
+                    <a  href="https://www.instagram.com/waahhyyuu17"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 font-medium hover:text-emerald-500 underline transition-colors"
+                    >
+                        Wahyu Ardiansyah
+                    </a>
+                </footer>
             </form>
         </GuestLayout>
     );

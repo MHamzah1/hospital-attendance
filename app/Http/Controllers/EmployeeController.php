@@ -44,7 +44,7 @@ class EmployeeController extends Controller
 
         $employees = $query->latest()->paginate(15);
         $employees->getCollection()->transform(function ($employee) {
-            $employee->photo_url = $employee->photo ? Storage::disk('public')->url($employee->photo) : null;
+            $employee->photo_url = $employee->photo ? '/storage/' . $employee->photo : null;
             return $employee;
         });
 

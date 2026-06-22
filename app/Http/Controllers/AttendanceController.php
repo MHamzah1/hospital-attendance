@@ -358,12 +358,12 @@ class AttendanceController extends Controller
     {
         // URL foto clock in
         $attendance->photo_in_url = $attendance->photo_in
-            ? Storage::disk('public')->url($attendance->photo_in)
+            ? '/storage/' . $attendance->photo_in
             : null;
 
         // URL foto clock out
         $attendance->photo_out_url = $attendance->photo_out
-            ? Storage::disk('public')->url($attendance->photo_out)
+            ? '/storage/' . $attendance->photo_out
             : null;
 
         // Pastikan shift ter-load jika belum

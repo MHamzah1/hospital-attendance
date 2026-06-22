@@ -17,13 +17,19 @@ export default function PayrollImport({ flash }) {
     // Format number untuk display (tanpa desimal)
     const formatNumber = (value) => {
         if (value === null || value === undefined || value === '') return value;
-        const num = parseFloat(value);
+        const cleaned = typeof value === 'string' ? value.replace(/[.,](?=\d{3}(?:\D|$))/g, '') : value;
+        const num = parseFloat(cleaned);
         if (isNaN(num)) return value;
-        // Jika angka bulat atau besar (> 1000), format tanpa desimal
+        if (typeof value === 'string' && !/^-?[\d.,]+$/.test(value.trim())) return value;
         if (Number.isInteger(num) || num >= 1000) {
             return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(num));
         }
         return value;
+    };
+
+    const isTextColumn = (header) => {
+        const h = (header || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        return ['nip', 'no', 'nama', 'namakaryawan', 'employeeid'].includes(h);
     };
 
     // Hanya field potongan, koreksi admin & BPJS. Gaji, tunjangan, lembur otomatis dari sistem saat Generate.
@@ -47,8 +53,9 @@ export default function PayrollImport({ flash }) {
         { key: 'bpjs_pensiun_jp',             label: 'BPJS TK JP (1%)',     aliases: ['bpjspensiunjp', 'bpjsjp', 'bpjs_tk_jp', 'bpjstkjp', 'bpjspensiun'] },
     ];
 
-    const handleFileSelect = async (e) => {
-        const selectedFile = e.target.files[0];
+    const [isDragging, setIsDragging] = useState(false);
+
+    const processFile = async (selectedFile) => {
         if (!selectedFile) return;
 
         setLoading(true);
@@ -111,6 +118,47 @@ export default function PayrollImport({ flash }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleFileSelect = (e) => {
+        const selectedFile = e.target.files[0];
+        processFile(selectedFile);
+    };
+
+    const isAcceptedFile = (selectedFile) => {
+        if (!selectedFile) return false;
+        const allowedExt = ['csv', 'xlsx', 'xls', 'xlsm'];
+        const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+        return allowedExt.includes(ext);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!loading) setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (loading) return;
+
+        const droppedFile = e.dataTransfer.files?.[0];
+        if (!droppedFile) return;
+
+        if (!isAcceptedFile(droppedFile)) {
+            alert('Format file tidak didukung. Gunakan file CSV, XLSX, XLS, atau XLSM.');
+            return;
+        }
+
+        processFile(droppedFile);
     };
 
     const handleProcessImport = async () => {
@@ -199,7 +247,7 @@ export default function PayrollImport({ flash }) {
                             <p className="font-semibold">Alur Penggajian:</p>
                             <ol className="list-decimal list-inside space-y-0.5">
                                 <li><strong>Import</strong> data potongan admin (CDT, Alpa, Cashbond, dll) dari Excel</li>
-                                <li><strong>Generate</strong> payroll — sistem otomatis rekap gaji, tunjangan, lembur, absensi, cuti & BPJS</li>
+                                <li><strong>Generate Payroll</strong> sistem otomatis rekap gaji, tunjangan, lembur, absensi, cuti & BPJS</li>
                                 <li><strong>Review</strong> & cetak slip gaji</li>
                             </ol>
                         </div>
@@ -254,7 +302,16 @@ export default function PayrollImport({ flash }) {
                         {/* File Upload */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-3">Pilih File DATA PENGGAJIAN</label>
-                            <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
+                                    isDragging
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+                                }`}
+                            >
                                 <input
                                     type="file"
                                     accept=".csv,.xlsx,.xls,.xlsm"
@@ -302,7 +359,7 @@ export default function PayrollImport({ flash }) {
                                         <tr key={rowIdx} className="border-b hover:bg-slate-50">
                                             {row.map((cell, cellIdx) => (
                                                 <td key={cellIdx} className="px-4 py-3 text-slate-700">
-                                                    {formatNumber(cell)}
+                                                    {isTextColumn(preview.headers?.[cellIdx]) ? cell : formatNumber(cell)}
                                                 </td>
                                             ))}
                                         </tr>

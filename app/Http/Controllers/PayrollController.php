@@ -326,6 +326,40 @@ class PayrollController extends Controller
         return back()->with('success', 'Payroll berhasil ditandai sebagai dibayar!');
     }
 
+    public function bulkFinalize(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $month = $request->get('month', Carbon::now()->month);
+        $year  = $request->get('year', Carbon::now()->year);
+
+        $count = Payroll::where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'draft')
+            ->update(['status' => 'finalized']);
+
+        return back()->with('success', "{$count} payroll berhasil di-finalisasi!");
+    }
+
+    public function bulkMarkPaid(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $month = $request->get('month', Carbon::now()->month);
+        $year  = $request->get('year', Carbon::now()->year);
+
+        $count = Payroll::where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'finalized')
+            ->update(['status' => 'paid']);
+
+        return back()->with('success', "{$count} payroll berhasil ditandai sebagai dibayar!");
+    }
+
     public function exportReactPdf(Payroll $payroll, Request $request)
     {
         $user = $request->user();
@@ -502,12 +536,6 @@ class PayrollController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Rekap Gaji');
 
-        // Title
-        $sheet->setCellValue('A1', "REKAP GAJI KARYAWAN - {$months[$month]} {$year}");
-        $sheet->mergeCells('A1:Z1');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
         // Headers
         $headers = [
             'No', 'NIP', 'Nama', 'Departemen', 'Jabatan',
@@ -522,24 +550,66 @@ class PayrollController extends Controller
             'Total Potongan', 'Gaji Bersih', 'Status',
         ];
 
-        $col = 'A';
-        foreach ($headers as $header) {
-            $sheet->setCellValue($col . '3', $header);
-            $col++;
-        }
-
-        // Style header row
         $lastCol = chr(ord('A') + count($headers) - 1);
         if (count($headers) > 26) {
             $lastCol = 'A' . chr(ord('A') + count($headers) - 27);
         }
-        $headerRange = "A3:{$lastCol}3";
+
+        // Title
+        $sheet->setCellValue('C1', "REKAP GAJI KARYAWAN");
+        $sheet->mergeCells("C1:{$lastCol}1");
+        $sheet->getStyle('C1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('C1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+
+        // Logo (floating image, positioned in column B beside the header text)
+        if (file_exists(public_path('logo.png'))) {
+            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+            $drawing->setName('Logo');
+            $drawing->setDescription('Logo RS Kartika Husada Setu');
+            $drawing->setPath(public_path('logo.png'));
+            $drawing->setHeight(85);
+            $drawing->setCoordinates('B1');
+            $drawing->setOffsetX(10);
+            $drawing->setOffsetY(1);
+            $drawing->setWorksheet($sheet);
+        }
+
+        // Hospital name, address, and period
+        $sheet->setCellValue('C2', "Rumah Sakit Kartika Husada Setu");
+        $sheet->mergeCells("C2:{$lastCol}2");
+        $sheet->getStyle('C2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('C2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+
+        $sheet->setCellValue('C3', "Jl. MT. Haryono, Burangkeng, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320 | Telp: (021) 1234567");
+        $sheet->mergeCells("C3:{$lastCol}3");
+        $sheet->getStyle('C3')->getFont()->setSize(8)->getColor()->setRGB('555555');
+        $sheet->getStyle('C3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+
+        $sheet->setCellValue('C4', "Periode: {$months[$month]} {$year}");
+        $sheet->mergeCells("C4:{$lastCol}4");
+        $sheet->getStyle('C4')->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('0F3460');
+        $sheet->getStyle('C4')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+
+        // Give header rows enough height to comfortably fit the logo
+        $sheet->getRowDimension(1)->setRowHeight(21.95);
+        $sheet->getRowDimension(2)->setRowHeight(15.95);
+        $sheet->getRowDimension(3)->setRowHeight(14.1);
+        $sheet->getRowDimension(4)->setRowHeight(14.1);
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '5', $header);
+            $col++;
+        }
+
+        // Style header row
+        $headerRange = "A5:{$lastCol}5";
         $sheet->getStyle($headerRange)->getFont()->setBold(true);
         $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('0F3460');
         $sheet->getStyle($headerRange)->getFont()->getColor()->setRGB('FFFFFF');
 
         // Data rows
-        $row = 4;
+        $row = 6;
         foreach ($payrolls as $i => $p) {
             $col = 'A';
             $values = [
@@ -575,7 +645,7 @@ class PayrollController extends Controller
         }
 
         // Number format for currency columns (M onwards)
-        $currencyRange = "M4:{$lastCol}" . ($row - 1);
+        $currencyRange = "M6:{$lastCol}" . ($row - 1);
         if ($row > 4) {
             $sheet->getStyle($currencyRange)->getNumberFormat()->setFormatCode('#,##0');
         }

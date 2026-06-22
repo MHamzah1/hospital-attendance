@@ -4,16 +4,22 @@
     <meta charset="utf-8">
     <title>Rekap Gaji</title>
     <style>
-        @page { size: A4 landscape; margin: 10mm 8mm; }
-        * { margin: 10px; padding: 5px; box-sizing: border-box; }
+        @page { size: A4 landscape; margin: 22mm 8mm 10mm 8mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 6.5px; color: #1a1a2e; }
 
-        .header { text-align: center; margin-bottom: 8px; border-bottom: 2px solid #0f3460; padding-bottom: 5px; }
+        .header { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #0f3460; padding-bottom: 6px; }
+        .header-table { width: auto; margin: 0 auto; border-collapse: collapse; }
+        .header-table td { vertical-align: middle; }
+        .header-logo { padding-right: 10px; text-align: center; }
+        .header-logo img { height: 56px; }
+        .header-text { text-align: left; }
         .header h1 { font-size: 12px; color: #0f3460; }
         .header p { font-size: 8px; color: #555; margin-top: 2px; }
+        .header .period { font-size: 8px; font-weight: bold; color: #0f3460; margin-top: 2px; }
 
         table { width: 100%; border-collapse: collapse; }
-        th, td { border: 0.5px solid #999; padding: 2px 3px; }
+        table:not(.header-table) th, table:not(.header-table) td { border: 0.5px solid #999; padding: 2px 3px; }
         th { background: #0f3460; color: white; font-size: 6px; text-align: center; white-space: nowrap; }
         td { font-size: 6.5px; }
         td.num { text-align: right; font-family: monospace; white-space: nowrap; }
@@ -26,8 +32,21 @@
 </head>
 <body>
     <div class="header">
-        <h1>REKAP GAJI KARYAWAN</h1>
-        <p>RS Kartika Husada Setu &mdash; Periode: {{ $monthName }} {{ $year }}</p>
+        <table class="header-table">
+            <tr>
+                @if(file_exists(public_path('logo.png')))
+                <td class="header-logo">
+                    <img src="{{ public_path('logo.png') }}" alt="Logo">
+                </td>
+                @endif
+                <td class="header-text">
+                    <h1>REKAP GAJI KARYAWAN</h1>
+                    <p>Rumah Sakit Kartika Husada Setu</p>
+                    <p>Jl. MT. Haryono, Burangkeng, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320 | Telp: (021) 1234567</p>
+                    <p class="period">Periode: {{ $monthName }} {{ $year }}</p>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <table>

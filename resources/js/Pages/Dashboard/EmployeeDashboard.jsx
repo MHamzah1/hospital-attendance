@@ -27,7 +27,7 @@ export default function EmployeeDashboard({ todayAttendance, stats, latestPayrol
             <div className="bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] rounded-2xl p-6 lg:p-8 mb-8 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="relative">
-                    <p className="text-emerald-400 text-sm font-medium">Selamat datang kembali 👋</p>
+                    <p className="text-emerald-400 text-sm font-medium">Selamat Datang,</p>
                     <h1 className="text-2xl lg:text-3xl font-extrabold mt-1">{user.name}</h1>
                     <p className="text-slate-300 text-sm mt-1">{user.position} — {user.department}</p>
                 </div>
@@ -155,7 +155,7 @@ export default function EmployeeDashboard({ todayAttendance, stats, latestPayrol
                         <div className="text-right">
                             <p className="text-lg font-extrabold text-slate-800">{formatDate(retirementInfo.retirementDate)}</p>
                             <p className={`text-xs font-medium ${retirementInfo.isRetired ? 'text-red-600' : 'text-emerald-600'}`}>
-                                {retirementInfo.isRetired ? 'Sudah memasuki usia pensiun' : `Sisa ${retirementInfo.remainingYears} tahun lagi`}
+                                {retirementInfo.isRetired ? 'Sudah memasuki usia pensiun' : `Sisa ${retirementInfo.remainingText}`}
                             </p>
                         </div>
                     </div>

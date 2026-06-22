@@ -7,6 +7,7 @@ use App\Models\LeaveRequest;
 use App\Models\Unit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class LeaveController extends Controller
@@ -96,6 +97,10 @@ class LeaveController extends Controller
         }
 
         $leaves = $query->latest()->paginate(15)->withQueryString();
+        $leaves->getCollection()->transform(function ($leave) {
+            $leave->attachment_url = $leave->attachment ? '/storage/' . $leave->attachment : null;
+            return $leave;
+        });
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
         $units = Unit::orderBy('name')->get(['id', 'name', 'department_id']);
@@ -130,6 +135,11 @@ class LeaveController extends Controller
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date',
             'reason' => 'required|string|max:500',
+            'attachment' => 'required_if:type,cuti_sakit|nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'attachment.required_if' => 'Lampiran surat sakit wajib diunggah untuk pengajuan Cuti Sakit.',
+            'attachment.mimes' => 'Lampiran harus berformat PDF, JPG, atau PNG.',
+            'attachment.max' => 'Ukuran lampiran maksimal 5 MB.',
         ]);
 
         $startDate = Carbon::parse($validated['start_date']);
@@ -169,6 +179,12 @@ class LeaveController extends Controller
             $initialLevel = 3;
         }
 
+        // Simpan lampiran surat sakit (jika ada)
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('leave-attachments', 'public');
+        }
+
         LeaveRequest::create([
             'user_id' => $request->user()->id,
             'type' => $validated['type'],
@@ -176,6 +192,7 @@ class LeaveController extends Controller
             'end_date' => $validated['end_date'],
             'total_days' => $totalDays,
             'reason' => $validated['reason'],
+            'attachment' => $attachmentPath,
             'status' => 'pending',
             'current_approval_level' => $initialLevel,
         ]);
@@ -327,7 +344,7 @@ class LeaveController extends Controller
                 ? [$i + 1,
                    $leave->user?->name ?? '-',
                    $leave->user?->nip ?? '-',
-                   $leave->user?->unit_model?->name ?? '-',
+                   $leave->user?->unitModel?->name ?? '-',
                    $typeLabels[$leave->type] ?? $leave->type,
                    Carbon::parse($leave->start_date)->format('d/m/Y'),
                    Carbon::parse($leave->end_date)->format('d/m/Y'),

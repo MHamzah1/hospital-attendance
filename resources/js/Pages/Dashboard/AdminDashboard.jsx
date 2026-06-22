@@ -136,7 +136,7 @@ export default function AdminDashboard({ stats, recentAttendances, recentLeaves,
                                         <div>
                                             <p className="text-sm font-medium text-slate-700">{ot.user?.name}</p>
                                             <p className="text-xs text-slate-400">
-                                                {ot.date} • {ot.total_hours} jam
+                                                {ot.date_formatted} • {ot.start_time} - {ot.end_time}
                                             </p>
                                         </div>
                                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-100 text-amber-700">Pending</span>

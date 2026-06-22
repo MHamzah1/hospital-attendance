@@ -477,7 +477,7 @@ export default function ScheduleIndex() {
                             {/* Bulk Paste Area */}
                             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <label className="block text-sm font-medium text-blue-900 mb-2">
-                                    📋 Paste data dari Excel/Spreadsheet
+                                    Paste data dari Excel/Spreadsheet
                                 </label>
                                 <textarea
                                     ref={pasteAreaRef}
@@ -486,7 +486,7 @@ export default function ScheduleIndex() {
                                     className="w-full h-20 p-3 border border-gray-300 rounded-lg font-mono text-sm"
                                 />
                                 <p className="text-xs text-blue-700 mt-2">
-                                    💡 Contoh: Paste dari Excel → [Pagi Tab Siang Tab Malam] → Enter → [Siang Tab Malam Tab Pagi]
+                                    Contoh: Paste dari Excel → [Pagi Tab Siang Tab Malam] → Enter → [Siang Tab Malam Tab Pagi]
                                 </p>
                             </div>
 

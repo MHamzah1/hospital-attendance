@@ -8,6 +8,8 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
     const [year, setYear] = useState(filters.year);
     const [search, setSearch] = useState(filters.search || '');
     const [generating, setGenerating] = useState(false);
+    const [bulkFinalizing, setBulkFinalizing] = useState(false);
+    const [bulkPaying, setBulkPaying] = useState(false);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
@@ -30,6 +32,29 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
                 ...(dateTo ? { date_to: dateTo } : {}),
             }, {
                 onFinish: () => setGenerating(false),
+            });
+        }
+    };
+
+    const draftCount = payrolls?.filter(p => p.status === 'draft').length || 0;
+    const finalizedCount = payrolls?.filter(p => p.status === 'finalized').length || 0;
+
+    const handleBulkFinalize = () => {
+        if (draftCount === 0) return;
+        if (confirm(`Finalisasi ${draftCount} payroll berstatus Draft untuk ${months[month - 1]} ${year}?`)) {
+            setBulkFinalizing(true);
+            router.post('/payroll/bulk-finalize', { month, year }, {
+                onFinish: () => setBulkFinalizing(false),
+            });
+        }
+    };
+
+    const handleBulkMarkPaid = () => {
+        if (finalizedCount === 0) return;
+        if (confirm(`Tandai ${finalizedCount} payroll berstatus Final sebagai Dibayar untuk ${months[month - 1]} ${year}?`)) {
+            setBulkPaying(true);
+            router.post('/payroll/bulk-mark-paid', { month, year }, {
+                onFinish: () => setBulkPaying(false),
             });
         }
     };
@@ -71,17 +96,25 @@ export default function PayrollIndex({ payrolls, employees, filters, summary }) 
                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30 disabled:opacity-50">
                         {generating ? 'Generating...' : '⚡ Generate Payroll'}
                     </button>
+                    <button onClick={handleBulkFinalize} disabled={bulkFinalizing || draftCount === 0}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
+                        {bulkFinalizing ? 'Memproses...' : `✅ Finalisasi Semua${draftCount > 0 ? ` (${draftCount})` : ''}`}
+                    </button>
+                    <button onClick={handleBulkMarkPaid} disabled={bulkPaying || finalizedCount === 0}
+                        className="bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50">
+                        {bulkPaying ? 'Memproses...' : `💰 Bayar Semua${finalizedCount > 0 ? ` (${finalizedCount})` : ''}`}
+                    </button>
                     <a href={`/payroll-bulk-export?month=${month}&year=${year}&format=xlsx`}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
-                        📊 Export Excel
+                        Export Excel
                     </a>
                     <a href={`/payroll-bulk-export?month=${month}&year=${year}&format=pdf`}
                         className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
-                        📄 Export PDF
+                        Export PDF
                     </a>
                     <Link href="/payroll-import"
                         className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
-                        📥 Import Potongan
+                        Import Potongan
                     </Link>
                 </div>
             </div>
