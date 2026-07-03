@@ -60,7 +60,7 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                         <div className="flex-1">
                             <input
                                 type="text"
-                                placeholder="Cari nama atau NIP..."
+                                placeholder="Cari nama, NIP, departemen, unit, jabatan..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -191,7 +191,7 @@ export default function EmployeeIndex({ employees, departments, units, filters, 
                                                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">Manager</span>
                                             )}
                                             {employee.approval_role === 'direktur' && (
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700">Direktur</span>
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700">Kantor</span>
                                             )}
                                             {(!employee.approval_role || employee.approval_role === 'staf') && (
                                                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-500">Staf</span>

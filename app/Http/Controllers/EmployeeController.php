@@ -30,7 +30,11 @@ class EmployeeController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('nip', 'like', "%{$search}%")
-                  ->orWhere('employee_id', 'like', "%{$search}%");
+                  ->orWhere('employee_id', 'like', "%{$search}%")
+                  ->orWhere('position', 'like', "%{$search}%")
+                  ->orWhereHas('departmentModel', fn($d) => $d->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('unitModel', fn($u) => $u->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('jobPosition', fn($j) => $j->where('name', 'like', "%{$search}%"));
             });
         }
 
