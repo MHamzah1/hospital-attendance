@@ -265,7 +265,7 @@
                 <div style="text-align: center; padding: 5px 0;">
                     <img src="{{ $qrBase64 }}" style="width: 80px; height: 80px;" alt="QR Verification">
                 </div>
-                <span class="sig-name">Yanuwar Syawaludin, S.I.A.P</span><br>
+                <span class="sig-name">Yanuwar Syawaludin, S.M</span><br>
                 <span class="sig-title">HRD / Admin SDM</span>
             </td>
         </tr>

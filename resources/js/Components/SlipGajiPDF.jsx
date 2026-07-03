@@ -541,7 +541,7 @@ const SlipGajiPDF = ({ payroll, cutiInfo, qrDataUrl }) => {
                         ) : (
                             <View style={s.sigSpace} />
                         )}
-                        <Text style={s.sigName}>Yanuwar Syawaludin, S.I.A.P</Text>
+                        <Text style={s.sigName}>Yanuwar Syawaludin, S.M</Text>
                         <Text style={s.sigTitle}>HRD / Admin SDM</Text>
                     </View>
                 </View>
