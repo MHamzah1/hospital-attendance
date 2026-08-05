@@ -340,6 +340,27 @@ class AttendanceController extends Controller
             return back()->withErrors(['message' => 'Anda sudah melakukan clock out hari ini.']);
         }
 
+        // Cek apakah jam shift sudah selesai
+        $scheduleToday = \App\Models\UserSchedule::with('shift')
+            ->where('user_id', $user->id)
+            ->whereDate('date', $today)
+            ->first();
+
+        if ($scheduleToday && $scheduleToday->shift && $scheduleToday->shift->end_time) {
+            $shift = $scheduleToday->shift;
+            $shiftEnd = Carbon::parse($today->format('Y-m-d') . ' ' . $shift->end_time);
+
+            // Night shift: jam selesai dihitung hari berikutnya
+            if ($shift->is_night_shift && $shiftEnd->lt(Carbon::parse($today->format('Y-m-d') . ' ' . $shift->start_time))) {
+                $shiftEnd->addDay();
+            }
+
+            if ($now->lt($shiftEnd)) {
+                $endFormatted = $shiftEnd->format('H:i');
+                return back()->with('error', "Belum bisa clock out. Shift Anda berakhir pukul {$endFormatted} WIB.");
+            }
+        }
+
         $photoPath = $this->saveBase64Photo($request->photo, $user->id, 'out');
 
         $attendance->update([
